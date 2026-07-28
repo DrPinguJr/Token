@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+:root {
+  --tokenly-canvas: #fffaf6;
+  --tokenly-canvas-soft: #f5f3ef;
+  --tokenly-surface: #ffffff;
+  --tokenly-ink: #17243b;
+  --tokenly-ink-soft: #263751;
+  --tokenly-ink-muted: #596579;
+  --tokenly-brand-blue: #a8d9f1;
+  --tokenly-brand-blue-soft: #e0f3fc;
+  --tokenly-brand-blue-strong: #286b91;
+  --tokenly-brand-pink: #efafc6;
+  --tokenly-brand-pink-soft: #fbe5ed;
+  --tokenly-brand-pink-strong: #9e486b;
+  --tokenly-brand-mint: #b9ddce;
+  --tokenly-brand-mint-soft: #e3f2ec;
+  --tokenly-brand-mint-strong: #35745e;
+  --tokenly-danger: #b84a5b;
+  --tokenly-warning: #9b6519;
+  --tokenly-success: #34705a;
+}
+
+@theme inline {
+  --color-canvas: var(--tokenly-canvas);
+  --color-canvas-soft: var(--tokenly-canvas-soft);
+  --color-surface: var(--tokenly-surface);
+  --color-ink: var(--tokenly-ink);
+  --color-ink-soft: var(--tokenly-ink-soft);
+  --color-ink-muted: var(--tokenly-ink-muted);
+  --color-brand-blue: var(--tokenly-brand-blue);
+  --color-brand-blue-soft: var(--tokenly-brand-blue-soft);
+  --color-brand-blue-strong: var(--tokenly-brand-blue-strong);
+  --color-brand-pink: var(--tokenly-brand-pink);
+  --color-brand-pink-soft: var(--tokenly-brand-pink-soft);
+  --color-brand-pink-strong: var(--tokenly-brand-pink-strong);
+  --color-brand-mint: var(--tokenly-brand-mint);
+  --color-brand-mint-soft: var(--tokenly-brand-mint-soft);
+  --color-brand-mint-strong: var(--tokenly-brand-mint-strong);
+  --color-surface-blue: var(--tokenly-brand-blue-soft);
+  --color-surface-pink: var(--tokenly-brand-pink-soft);
+  --color-blue-300: var(--tokenly-brand-blue);
+  --color-blue-600: var(--tokenly-brand-blue-strong);
+  --color-pink-300: var(--tokenly-brand-pink);
+  --color-pink-600: var(--tokenly-brand-pink-strong);
+  --color-muted: var(--tokenly-ink-muted);
+  --color-focus: var(--tokenly-brand-blue-strong);
+  --color-danger: var(--tokenly-danger);
+  --color-warning: var(--tokenly-warning);
+  --color-success: var(--tokenly-success);
+  --font-sans:
+    Inter, ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif;
+  --radius-card: 1.5rem;
+  --shadow-soft:
+    0 1px 2px rgb(23 36 59 / 0.04), 0 12px 28px rgb(43 67 93 / 0.08);
+  --shadow-raised:
+    0 2px 4px rgb(23 36 59 / 0.08), 0 16px 34px rgb(43 67 93 / 0.14);
+  --shadow-floating:
+    0 4px 10px rgb(23 36 59 / 0.08), 0 28px 60px rgb(43 67 93 / 0.16);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--tokenly-canvas);
+    color: var(--tokenly-ink);
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  ::selection {
+    background: var(--tokenly-brand-blue);
+    color: var(--tokenly-ink);
+  }
+
+  :focus-visible {
+    scroll-margin: 1rem;
+  }
+}
+
+@layer utilities {
+  .tokenly-court-lines {
+    isolation: isolate;
+  }
+
+  .tokenly-court-lines::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(
+        90deg,
+        transparent calc(50% - 0.5px),
+        rgb(40 107 145 / 0.08) calc(50% - 0.5px),
+        rgb(40 107 145 / 0.08) calc(50% + 0.5px),
+        transparent calc(50% + 0.5px)
+      ),
+      radial-gradient(
+        circle at 50% 50%,
+        transparent 0 16%,
+        rgb(40 107 145 / 0.08) 16.2% 16.6%,
+        transparent 16.8%
+      );
+    content: "";
+    pointer-events: none;
+  }
+
+  .tokenly-safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+@keyframes tokenly-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
