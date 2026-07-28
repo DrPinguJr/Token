@@ -35,11 +35,12 @@ describe("CustomerHomeScreen", () => {
 
     expect(screen.getByText("154")).toBeInTheDocument();
     expect(screen.getByText("tokens")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Scan to pay" })).toHaveAttribute(
+      "href",
+      "/customer/scan",
+    );
     expect(
-      screen.getByRole("link", { name: "Scan to pay" }),
-    ).toHaveAttribute("href", "/customer/scan");
-    expect(
-      screen.getByRole("link", { name: "Browse vendors" }),
+      screen.getAllByRole("link", { name: "Browse vendors" })[0],
     ).toHaveAttribute("href", "/customer/vendors");
     expect(screen.getByRole("link", { name: "Show my QR" })).toHaveAttribute(
       "href",
@@ -63,6 +64,8 @@ describe("CustomerHomeScreen", () => {
         "This wallet is frozen. You can still review its activity.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Show my QR" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Show my QR" }),
+    ).toBeInTheDocument();
   });
 });

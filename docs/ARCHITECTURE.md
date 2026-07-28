@@ -194,7 +194,7 @@ A settlement is an administrator-recorded business record with draft, approved, 
 
 ## Authentication and authorization
 
-The prototype uses local accounts and a locally persisted session. Account entry by mobile number is not identity proof; UI must disclose this. Role guards control route and command access, while services re-check actor permission for sensitive mutations.
+The prototype uses local accounts and a locally persisted session. `/enter` is for operational accounts only; the seeded super-admin uses local username/password credentials. Tokeners do not authenticate through `/enter`; they receive a one-time claim QR and then use their saved private account link. Role guards control route and command access, while services re-check actor permission for sensitive mutations.
 
 PIN verification sits behind `PinVerificationService`. The UI never logs a PIN or retains it in normal application state longer than a verification attempt. Simulated lockout is local prototype behaviour, not production-grade rate limiting or hashing.
 

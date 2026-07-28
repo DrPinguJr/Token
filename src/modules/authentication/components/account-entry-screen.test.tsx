@@ -13,7 +13,9 @@ import {
 
 function renderReadyScreen(
   options: Readonly<{
-    onEnter?: (input: Readonly<{ mobileNumber: string }>) => Promise<void>;
+    onEnter?: (
+      input: Readonly<{ username: string; password: string }>,
+    ) => Promise<void>;
   }> = {},
 ) {
   const onEnter = options.onEnter ?? vi.fn(async () => undefined);
@@ -31,32 +33,38 @@ function renderReadyScreen(
 }
 
 describe("AccountEntryScreen", () => {
-  it("discloses the unverified local flow and requests no PIN", () => {
+  it("discloses QR-only tokener access and requests operational credentials", () => {
     renderReadyScreen();
 
-    expect(
-      screen.getByText(/mobile numbers are not verified/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/no sms will be sent/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("textbox", { name: /mobile number/i }),
-    ).toHaveAttribute("type", "tel");
-    expect(screen.queryByLabelText(/pin/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/tokener access is qr-only/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/one-time claim qr/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("textbox", { name: /username/i })).toHaveAttribute(
+      "type",
+      "text",
+    );
+    expect(screen.getByLabelText(/password/i)).toHaveAttribute(
+      "type",
+      "password",
+    );
   });
 
-  it("normalizes formatted mobile input before requesting entry", async () => {
+  it("submits the admin credential input", async () => {
     const user = userEvent.setup();
     const onEnter = vi.fn(async () => undefined);
     renderReadyScreen({ onEnter });
 
     await user.type(
-      screen.getByRole("textbox", { name: /mobile number/i }),
-      "+65 9000-0001",
+      screen.getByRole("textbox", { name: /username/i }),
+      "AdminLance",
     );
+    await user.type(screen.getByLabelText(/password/i), "Lance888!");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() => {
-      expect(onEnter).toHaveBeenCalledWith({ mobileNumber: "90000001" });
+      expect(onEnter).toHaveBeenCalledWith({
+        username: "AdminLance",
+        password: "Lance888!",
+      });
     });
   });
 
@@ -66,18 +74,17 @@ describe("AccountEntryScreen", () => {
     renderReadyScreen({ onEnter });
 
     await user.type(
-      screen.getByRole("textbox", { name: /mobile number/i }),
-      "not-a-number",
+      screen.getByRole("textbox", { name: /username/i }),
+      "90000001",
     );
+    await user.type(screen.getByLabelText(/password/i), "Lance888!");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    expect(
-      await screen.findByText("Enter a valid mobile number."),
-    ).toBeVisible();
+    expect(await screen.findByText("Enter a valid username.")).toBeVisible();
     expect(onEnter).not.toHaveBeenCalled();
   });
 
-  it("shows the generic lookup failure for a typed unavailable account", async () => {
+  it("shows the generic lookup failure for incorrect credentials", async () => {
     const user = userEvent.setup();
     const onEnter = vi.fn(async () => {
       throw new AccountEntryFailedError();
@@ -85,9 +92,10 @@ describe("AccountEntryScreen", () => {
     renderReadyScreen({ onEnter });
 
     await user.type(
-      screen.getByRole("textbox", { name: /mobile number/i }),
-      "90000001",
+      screen.getByRole("textbox", { name: /username/i }),
+      "AdminLance",
     );
+    await user.type(screen.getByLabelText(/password/i), "wrong-password");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(
@@ -104,9 +112,10 @@ describe("AccountEntryScreen", () => {
     renderReadyScreen({ onEnter });
 
     await user.type(
-      screen.getByRole("textbox", { name: /mobile number/i }),
-      "90000001",
+      screen.getByRole("textbox", { name: /username/i }),
+      "AdminLance",
     );
+    await user.type(screen.getByLabelText(/password/i), "Lance888!");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(

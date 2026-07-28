@@ -6,8 +6,9 @@ import {
   CircleAlert,
   CircleDotDashed,
   LoaderCircle,
+  LockKeyhole,
   ShieldCheck,
-  Smartphone,
+  UserRound,
   WalletCards,
 } from "lucide-react";
 import Link from "next/link";
@@ -51,15 +52,21 @@ export function AccountEntryScreen({
     register,
     setError,
     setFocus,
-    setValue,
   } = useForm<AccountEntryFormInput, unknown, AccountEntryInput>({
     resolver: zodResolver(accountEntrySchema),
     defaultValues: {
-      mobileNumber: "",
+      username: "",
+      password: "",
     },
   });
 
-  const mobileNumberRegistration = register("mobileNumber", {
+  const usernameRegistration = register("username", {
+    onChange: () => {
+      clearErrors("root");
+      setEntryErrorKind(null);
+    },
+  });
+  const passwordRegistration = register("password", {
     onChange: () => {
       clearErrors("root");
       setEntryErrorKind(null);
@@ -82,7 +89,7 @@ export function AccountEntryScreen({
           ? ACCOUNT_ENTRY_FAILURE_MESSAGE
           : ACCOUNT_ENTRY_RECOVERY_MESSAGE,
       });
-      setFocus("mobileNumber");
+      setFocus("username");
     }
   });
 
@@ -98,17 +105,6 @@ export function AccountEntryScreen({
     }
   };
 
-  const useCustomerExample = (): void => {
-    setValue("mobileNumber", "9000 0009", {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
-    clearErrors("root");
-    setEntryErrorKind(null);
-    setFocus("mobileNumber");
-  };
-
   return (
     <section className="grid items-center gap-8 py-7 sm:py-12 lg:min-h-[calc(100vh-10rem)] lg:grid-cols-[minmax(0,0.92fr)_minmax(24rem,0.78fr)] lg:gap-16 lg:py-16">
       <div className="max-w-2xl">
@@ -121,14 +117,14 @@ export function AccountEntryScreen({
         </div>
 
         <h1 className="mt-5 text-4xl leading-[1.06] font-bold tracking-[-0.045em] text-balance text-ink sm:text-5xl lg:text-6xl">
-          Welcome to Tokenly.
+          Tokenly admin.
           <span className="mt-1 block text-brand-blue-strong">
-            Let&apos;s find your wallet.
+            Manage tokener QR access.
           </span>
         </h1>
         <p className="mt-5 max-w-xl text-lg leading-8 text-pretty text-ink-muted">
-          Enter the mobile number assigned to your fictional event account.
-          We&apos;ll take you straight to the right local experience.
+          Sign in as the local super-admin to create and distribute one-time
+          claim QR codes. Tokeners do not sign in here.
         </p>
 
         <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-2">
@@ -138,7 +134,7 @@ export function AccountEntryScreen({
             </span>
             <p className="mt-4 font-bold text-ink">One local wallet</p>
             <p className="mt-1 text-sm leading-6 text-ink-muted">
-              Your role and next screen come from seeded browser data.
+              Operational accounts come from seeded browser data.
             </p>
           </div>
           <div className="rounded-card bg-white/70 p-4 shadow-soft ring-1 ring-white/90 backdrop-blur">
@@ -147,7 +143,7 @@ export function AccountEntryScreen({
             </span>
             <p className="mt-4 font-bold text-ink">Prototype only</p>
             <p className="mt-1 text-sm leading-6 text-ink-muted">
-              No SMS, identity check, or external account is involved.
+              No Supabase Auth, SMS, or external account is involved.
             </p>
           </div>
         </div>
@@ -166,13 +162,13 @@ export function AccountEntryScreen({
         <div className="tokenly-court-lines relative overflow-hidden rounded-[2rem] bg-white/90 p-5 shadow-floating ring-1 ring-white sm:p-7">
           <div className="relative">
             <span className="grid size-12 place-items-center rounded-2xl bg-ink text-white shadow-raised">
-              <Smartphone aria-hidden="true" className="size-6" />
+              <UserRound aria-hidden="true" className="size-6" />
             </span>
             <h2 className="mt-5 text-2xl font-bold tracking-[-0.03em] text-ink">
-              Enter your account
+              Super-admin sign in
             </h2>
             <p className="mt-2 leading-7 text-ink-muted">
-              Use a seeded mobile number. Formatting spaces are welcome.
+              Use the seeded local admin username and password.
             </p>
 
             <div
@@ -185,10 +181,11 @@ export function AccountEntryScreen({
               />
               <p>
                 <span className="font-bold text-ink">
-                  Mobile numbers are not verified.
+                  Tokener access is QR-only.
                 </span>{" "}
-                This local prototype only matches fictional data stored in this
-                browser. No SMS will be sent.
+                Customers receive a one-time claim QR and then keep their
+                private account link. Anyone with that link can open the account
+                QR.
               </p>
             </div>
 
@@ -216,44 +213,76 @@ export function AccountEntryScreen({
                 onSubmit={(event) => void submitEntry(event)}
               >
                 <label
-                  htmlFor="mobile-number"
+                  htmlFor="username"
                   className="text-sm font-bold text-ink"
                 >
-                  Mobile number
+                  Username
                 </label>
                 <div className="relative mt-2">
-                  <Smartphone
+                  <UserRound
                     aria-hidden="true"
                     className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-muted"
                   />
                   <input
-                    {...mobileNumberRegistration}
-                    id="mobile-number"
-                    type="tel"
-                    inputMode="tel"
+                    {...usernameRegistration}
+                    id="username"
+                    type="text"
+                    inputMode="text"
                     enterKeyHint="go"
-                    autoComplete="tel"
-                    placeholder="9000 0001"
+                    autoComplete="username"
+                    placeholder="AdminLance"
                     aria-invalid={
-                      errors.mobileNumber === undefined ? undefined : true
+                      errors.username === undefined ? undefined : true
                     }
-                    aria-describedby="mobile-number-hint mobile-number-error"
+                    aria-describedby="username-hint username-error"
                     disabled={isBusy}
-                    className="min-h-14 w-full rounded-2xl bg-canvas-soft py-3 pr-4 pl-12 text-lg font-semibold tracking-[0.035em] text-ink ring-1 ring-ink/8 transition outline-none placeholder:font-normal placeholder:tracking-normal placeholder:text-ink-muted/70 hover:ring-ink/18 focus:bg-white focus:ring-2 focus:ring-brand-blue-strong disabled:cursor-wait disabled:opacity-65"
+                    className="min-h-14 w-full rounded-2xl bg-canvas-soft py-3 pr-4 pl-12 text-lg font-semibold text-ink ring-1 ring-ink/8 transition outline-none placeholder:font-normal placeholder:text-ink-muted/70 hover:ring-ink/18 focus:bg-white focus:ring-2 focus:ring-brand-blue-strong disabled:cursor-wait disabled:opacity-65"
                   />
                 </div>
                 <p
-                  id="mobile-number-hint"
+                  id="username-hint"
                   className="mt-2 text-sm leading-5 text-ink-muted"
                 >
-                  Singapore +65 formatting is accepted.
+                  Seeded local admin: AdminLance.
                 </p>
                 <p
-                  id="mobile-number-error"
-                  role={errors.mobileNumber === undefined ? undefined : "alert"}
+                  id="username-error"
+                  role={errors.username === undefined ? undefined : "alert"}
                   className="mt-2 min-h-5 text-sm font-semibold text-danger"
                 >
-                  {errors.mobileNumber?.message}
+                  {errors.username?.message}
+                </p>
+
+                <label
+                  htmlFor="password"
+                  className="mt-4 block text-sm font-bold text-ink"
+                >
+                  Password
+                </label>
+                <div className="relative mt-2">
+                  <LockKeyhole
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-muted"
+                  />
+                  <input
+                    {...passwordRegistration}
+                    id="password"
+                    type="password"
+                    autoComplete="current-password"
+                    aria-invalid={
+                      errors.password === undefined ? undefined : true
+                    }
+                    aria-describedby="password-error"
+                    disabled={isBusy}
+                    className="min-h-14 w-full rounded-2xl bg-canvas-soft py-3 pr-4 pl-12 text-lg font-semibold text-ink ring-1 ring-ink/8 transition outline-none hover:ring-ink/18 focus:bg-white focus:ring-2 focus:ring-brand-blue-strong disabled:cursor-wait disabled:opacity-65"
+                  />
+                </div>
+                <p
+                  id="password-error"
+                  role={errors.password === undefined ? undefined : "alert"}
+                  className="mt-2 min-h-5 text-sm font-semibold text-danger"
+                >
+                  {errors.password?.message}
                 </p>
 
                 {errors.root?.message !== undefined && (
@@ -299,17 +328,6 @@ export function AccountEntryScreen({
                     </>
                   )}
                 </button>
-
-                <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
-                  <span>Trying the welcome flow?</span>
-                  <button
-                    type="button"
-                    onClick={useCustomerExample}
-                    className="min-h-11 rounded-xl px-2 font-bold text-brand-blue-strong underline decoration-brand-blue/70 decoration-2 underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue-strong"
-                  >
-                    Use 9000 0009
-                  </button>
-                </div>
               </form>
             )}
 

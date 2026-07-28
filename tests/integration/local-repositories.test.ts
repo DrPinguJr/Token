@@ -637,7 +637,7 @@ describe("local data initialization", () => {
       status: "initialized",
       metadata: {
         key: "tokenly-data",
-        schemaVersion: 2,
+        schemaVersion: 5,
         seedVersion: 1,
         seededAt: updatedAt,
       },

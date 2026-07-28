@@ -1,14 +1,23 @@
-# Future Supabase Integration
+# Supabase Integration
 
-Supabase is **not configured in the current local prototype**. This directory contains planning material only:
+Supabase is **not used by the current application runtime**. The app still
+persists through browser IndexedDB repositories, and no route or service should
+be described as Supabase-backed until repository adapters and server-side
+transaction functions are implemented.
 
-- no Supabase project is linked;
-- no CLI configuration is required;
-- no migration has been created;
-- no environment key is required;
-- no remote command should be run.
+This directory now contains:
 
-`planned-schema.sql` is deliberately non-executable. It records proposed tables, relationships, constraints, and policy questions for a later production phase.
+- `config.toml`: Supabase CLI project configuration.
+- `migrations/20260728154615_initial_tokenly_schema.sql`: an executable first
+  relational schema migration for the current Tokenly data model.
+- `planned-schema.sql`: older non-executable planning material retained for
+  design context.
+
+The migration has **not** been pushed to a hosted Supabase project from this
+workspace. Pushing requires linking the project with the Supabase CLI and a
+database migration credential such as `SUPABASE_ACCESS_TOKEN` plus database
+password, or a direct database URL. Publishable, anon, secret, and service-role
+API keys are not a substitute for a database migration credential.
 
 ## Replacement boundary
 
@@ -38,15 +47,15 @@ Likely code locations will be the adapter implementations below each module’s 
 
 ## Production design requirements
 
-Before converting the plan into migrations:
+Before using the migration as production storage:
 
 1. Confirm identity linkage between Supabase Auth users and account profiles.
 2. Decide event tenancy and whether one user can participate in multiple events/roles.
 3. Review all constraints, indexes, status transitions, and amount limits.
 4. Move issuance, purchase, refund, adjustment, and settlement operations into server-controlled transactions.
-5. Design row-level security for customers, vendors, staff, and administrators.
+5. Design row-level security policies for customers, vendors, staff, and administrators.
 6. Prevent direct client inserts/updates to ledger and audit tables.
-7. Establish immutable/append-only enforcement with restricted grants and database triggers where appropriate.
+7. Keep append-only enforcement for ledger and audit tables.
 8. Define idempotency scope and uniqueness in the database.
 9. Add private Storage policies, server-side file signature/size checks, retention, and malware scanning.
 10. Implement server-side PIN hashing, throttling, lockout, recovery, logging, and monitoring.

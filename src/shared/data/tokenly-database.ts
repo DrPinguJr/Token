@@ -10,7 +10,7 @@ import {
 
 export const TOKENLY_DATABASE_NAME = "tokenly-local-prototype";
 export const TOKENLY_DATABASE_SCHEMA_VERSION = 1;
-export const TOKENLY_DATA_VERSION = 2;
+export const TOKENLY_DATA_VERSION = 5;
 
 export const tokenlyStoreNames = {
   accountPinCredentials: "accountPinCredentials",

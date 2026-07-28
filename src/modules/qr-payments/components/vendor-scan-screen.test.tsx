@@ -97,9 +97,7 @@ describe("VendorScanScreen", () => {
   it("hides the development simulator unless the exact feature gate is enabled", () => {
     renderScreen({ developmentToolsEnabled: false });
 
-    expect(
-      screen.queryByText("Development simulator"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Development simulator")).not.toBeInTheDocument();
   });
 
   it("re-resolves a development selection at the action boundary", async () => {

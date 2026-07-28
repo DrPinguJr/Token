@@ -51,8 +51,7 @@ function createVendorSummary(
   products: readonly Product[],
 ): CustomerVendorSummary {
   const availableProducts = products.filter(
-    (product) =>
-      product.vendorId === vendor.id && isAvailableProduct(product),
+    (product) => product.vendorId === vendor.id && isAvailableProduct(product),
   );
 
   return Object.freeze({
@@ -72,10 +71,7 @@ function createVendorSummary(
   });
 }
 
-function calculateLineTokenTotal(
-  product: Product,
-  quantity: number,
-): number {
+function calculateLineTokenTotal(product: Product, quantity: number): number {
   if (quantity > Math.floor(Number.MAX_SAFE_INTEGER / product.tokenPrice)) {
     throw new CustomerCommerceError("CUSTOMER_COMMERCE_INVALID_QUERY");
   }
@@ -164,15 +160,11 @@ export class CustomerCommerceQuery {
       customer === null ||
       customer.accountId !== actorAccount.id
     ) {
-      throw new CustomerCommerceError(
-        "CUSTOMER_COMMERCE_CUSTOMER_UNAVAILABLE",
-      );
+      throw new CustomerCommerceError("CUSTOMER_COMMERCE_CUSTOMER_UNAVAILABLE");
     }
 
     if (vendor === null) {
-      throw new CustomerCommerceError(
-        "CUSTOMER_COMMERCE_VENDOR_UNAVAILABLE",
-      );
+      throw new CustomerCommerceError("CUSTOMER_COMMERCE_VENDOR_UNAVAILABLE");
     }
 
     const wallet = await this.repositories.wallets.getById(customer.walletId);
@@ -186,22 +178,19 @@ export class CustomerCommerceQuery {
       throw new CustomerCommerceError("CUSTOMER_COMMERCE_WALLET_UNAVAILABLE");
     }
 
-    const ledgerEntries =
-      await this.repositories.ledgerEntries.findByWalletId(wallet.id);
+    const ledgerEntries = await this.repositories.ledgerEntries.findByWalletId(
+      wallet.id,
+    );
     let customerBalance: number;
 
     try {
       customerBalance = calculateWalletBalance(ledgerEntries);
     } catch {
-      throw new CustomerCommerceError(
-        "CUSTOMER_COMMERCE_BALANCE_UNAVAILABLE",
-      );
+      throw new CustomerCommerceError("CUSTOMER_COMMERCE_BALANCE_UNAVAILABLE");
     }
 
     if (customerBalance < 0) {
-      throw new CustomerCommerceError(
-        "CUSTOMER_COMMERCE_BALANCE_UNAVAILABLE",
-      );
+      throw new CustomerCommerceError("CUSTOMER_COMMERCE_BALANCE_UNAVAILABLE");
     }
 
     let estimatedTokenTotal = 0;
@@ -223,10 +212,7 @@ export class CustomerCommerceQuery {
 
       const lineTokenTotal = calculateLineTokenTotal(product, item.quantity);
 
-      if (
-        estimatedTokenTotal >
-        Number.MAX_SAFE_INTEGER - lineTokenTotal
-      ) {
+      if (estimatedTokenTotal > Number.MAX_SAFE_INTEGER - lineTokenTotal) {
         throw new CustomerCommerceError("CUSTOMER_COMMERCE_INVALID_QUERY");
       }
 

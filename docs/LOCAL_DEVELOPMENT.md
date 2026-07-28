@@ -44,23 +44,23 @@ Do not add Supabase or Vercel variables during the local prototype phase.
 
 The intended core seed accounts are:
 
-| Role                   | Mobile number | Development PIN |
-| ---------------------- | ------------- | --------------- |
-| Customer               | `90000001`    | `2468`          |
-| Vendor                 | `90000002`    | `2468`          |
-| Event staff            | `90000003`    | `2468`          |
-| Administrator          | `90000004`    | `2468`          |
-| Additional customer    | `90000005`    | `2468`          |
-| Additional vendor      | `90000006`    | `2468`          |
-| Additional vendor      | `90000007`    | `2468`          |
-| Additional event staff | `90000008`    | `2468`          |
-| Additional customer    | `90000009`    | `2468`          |
+| Role                   | Local username | Mobile number | Development PIN |
+| ---------------------- | -------------- | ------------- | --------------- |
+| Customer               | QR-only        | `90000001`    | `2468`          |
+| Vendor                 | Later          | `90000002`    | `2468`          |
+| Event staff            | Later          | `90000003`    | `2468`          |
+| Administrator          | `AdminLance`   | `90000004`    | `2468`          |
+| Additional customer    | QR-only        | `90000005`    | `2468`          |
+| Additional vendor      | Later          | `90000006`    | `2468`          |
+| Additional vendor      | Later          | `90000007`    | `2468`          |
+| Additional event staff | Later          | `90000008`    | `2468`          |
+| Additional customer    | QR-only        | `90000009`    | `2468`          |
 
 `2468` is deliberately shared development data and must never be used as a
 production default. Seed records persist only its documented prototype digest
 format, not the literal digits.
 
-The account entry screen must state that mobile numbers are not verified in this prototype.
+The account entry screen is for local operational users. The seeded super-admin signs in with username `AdminLance` and password `Lance888!`. Tokeners do not sign in there; they use the one-time claim QR and saved private account link.
 
 ## Local data
 
@@ -82,11 +82,14 @@ hook. It does not affect unrelated browser data.
 
 If seed contracts change, bump the seed version and provide an explicit reseed path. Do not silently overwrite a user’s local prototype data during a normal schema upgrade.
 
-The current local data and deterministic seed versions are both `2`. Version
+The current local data and deterministic seed versions are both `5`. Version
 `1` ledger data predates prefix-free operation reservations and strict
-entry-type semantics, so the application rejects it without clearing any
-records. During local development, explicitly use the confirmed Tokenly
-reset/reseed flow to replace version `1` data with the version `2` seed.
+entry-type semantics. Version `2` data predates the one-time claim QR, private
+account link, and regeneratable wallet QR fields. Version `3` data predates the
+admin username/password entry flow. Version `4` data predates numeric
+private-account links. The application rejects older versions without clearing
+any records. During local development, explicitly use the confirmed Tokenly
+reset/reseed flow to replace older data with the version `5` seed.
 
 ## Quality commands
 

@@ -30,9 +30,7 @@ export const browserVendorCameraScanner: VendorCameraScannerAdapter =
 
     async start(
       video: HTMLVideoElement,
-      onPayload: (
-        payload: string,
-      ) => Promise<VendorCameraPayloadOutcome>,
+      onPayload: (payload: string) => Promise<VendorCameraPayloadOutcome>,
     ): Promise<VendorCameraScanSession> {
       if (!browserCameraApisAreAvailable()) {
         throw new DOMException(

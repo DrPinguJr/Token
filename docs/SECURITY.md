@@ -6,7 +6,9 @@ Tokenly’s current deliverable is a browser-local prototype. It is not a secure
 
 The UI must disclose:
 
-- mobile numbers are not verified;
+- local operational credentials are prototype-only;
+- tokeners access their QR page through a bearer private link;
+- anyone with a tokener private link can open that account QR page;
 - PayNow checks are manual and not automatically verified;
 - evidence is retained locally as mock/prototype data;
 - settlement records do not initiate bank transfers;
@@ -127,6 +129,15 @@ Production requires server-side MIME/signature validation, storage policies, ret
 - Resolve the opaque code through the repository and re-check expected entity type.
 - Rate-limit lookup and scanning server-side in production.
 - Offer manual entry when camera access is denied or unavailable.
+- Keep the one-time claim QR, private account link, and vendor-facing wallet QR
+  as separate local credentials.
+- A one-time claim QR may reveal only the private account link, expires after
+  its configured short window, and is marked used after a successful claim.
+- The private account link is bearer access in the local prototype and must not
+  be embedded in the vendor-facing wallet QR.
+- Regenerating the wallet QR changes the vendor-facing customer public code and
+  invalidates older wallet QR payloads without changing the private account
+  link.
 
 ## Sensitive logging and error handling
 

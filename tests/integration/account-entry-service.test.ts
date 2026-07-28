@@ -36,7 +36,7 @@ describe("local account entry integration", () => {
     await resetLocalData();
   });
 
-  it("atomically resolves an incomplete customer and appends account_entry", async () => {
+  it("atomically resolves the seeded super-admin and appends account_entry", async () => {
     const service = new AccountEntryService({
       transactionRunner: createTransactionRunner(),
       generateAuditId: () => "audit-account-entry-integration-001",
@@ -44,7 +44,10 @@ describe("local account entry integration", () => {
       now: () => "2026-07-27T02:00:00.000Z",
     });
 
-    const session = await service.enter({ mobileNumber: "90000009" });
+    const session = await service.enter({
+      username: "AdminLance",
+      password: "Lance888!",
+    });
     const auditEntries = await runInLocalRepositoryTransaction((repositories) =>
       repositories.auditLogs.list({
         eventType: "account_entry",
@@ -52,14 +55,14 @@ describe("local account entry integration", () => {
       }),
     );
 
-    expect(session.destination).toBe("/customer/onboarding");
+    expect(session.destination).toBe("/admin/dashboard");
     expect(auditEntries).toHaveLength(1);
     expect(auditEntries[0]).toMatchObject({
       id: "audit-account-entry-integration-001",
       targetId: session.account.id,
       metadata: {
-        entryMethod: "mobile_number",
-        mobileNumberVerified: false,
+        entryMethod: "password",
+        prototypeSession: true,
       },
     });
   });
@@ -73,7 +76,7 @@ describe("local account entry integration", () => {
     });
 
     await expect(
-      service.enter({ mobileNumber: "98888888" }),
+      service.enter({ username: "AdminLance", password: "wrong-password" }),
     ).rejects.toBeInstanceOf(AccountEntryFailedError);
 
     const auditEntries = await runInLocalRepositoryTransaction((repositories) =>

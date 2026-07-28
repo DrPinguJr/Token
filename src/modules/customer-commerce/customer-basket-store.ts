@@ -13,8 +13,7 @@ export interface CustomerBasketStorage {
   setItem(key: string, value: string): void;
 }
 
-export interface CustomerBasketPreferenceStorage
-  extends CustomerBasketStorage {
+export interface CustomerBasketPreferenceStorage extends CustomerBasketStorage {
   readonly length: number;
   key(index: number): string | null;
 }
@@ -28,10 +27,7 @@ export class CustomerBasketStorageError extends Error {
   }
 }
 
-function createStorageKey(
-  actorAccountId: string,
-  vendorId: string,
-): string {
+function createStorageKey(actorAccountId: string, vendorId: string): string {
   return `${CUSTOMER_BASKET_STORAGE_PREFIX}:${actorAccountId}:${vendorId}`;
 }
 

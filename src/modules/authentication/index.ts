@@ -36,10 +36,7 @@ export type {
   LocalSessionStore,
   SessionStorage,
 } from "./local-session-store";
-export {
-  accountEntrySchema,
-  normalizeAccountEntryMobileNumber,
-} from "./mobile-account-entry-schema";
+export { accountEntrySchema } from "./mobile-account-entry-schema";
 export type {
   AccountEntryFormInput,
   AccountEntryInput,

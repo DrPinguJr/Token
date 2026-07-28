@@ -1,35 +1,35 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  accountEntrySchema,
-  normalizeAccountEntryMobileNumber,
-} from "./mobile-account-entry-schema";
+import { accountEntrySchema } from "./mobile-account-entry-schema";
 
 describe("accountEntrySchema", () => {
-  it.each([
-    ["9000 0001", "90000001"],
-    ["(9000) 0001", "90000001"],
-    ["+65 9000-0001", "90000001"],
-    ["65 9000 0001", "90000001"],
-    ["123456789012345", "123456789012345"],
-  ])("normalizes %s to %s", (input, expected) => {
-    expect(accountEntrySchema.parse({ mobileNumber: input })).toEqual({
-      mobileNumber: expected,
+  it("accepts a local operational username and password", () => {
+    expect(
+      accountEntrySchema.parse({
+        username: "AdminLance",
+        password: "Lance888!",
+      }),
+    ).toEqual({
+      username: "AdminLance",
+      password: "Lance888!",
     });
   });
 
-  it.each(["", "9000ABC1", "1234567", "1234567890123456", "++6590000001"])(
-    "rejects invalid input without broad character coercion: %s",
-    (mobileNumber) => {
-      expect(accountEntrySchema.safeParse({ mobileNumber }).success).toBe(
-        false,
-      );
-    },
-  );
-});
+  it.each([
+    [{ username: "", password: "Lance888!" }, "Enter your username."],
+    [
+      { username: "90000001", password: "Lance888!" },
+      "Enter a valid username.",
+    ],
+    [
+      { username: "Admin Lance", password: "Lance888!" },
+      "Enter a valid username.",
+    ],
+    [{ username: "AdminLance", password: "" }, "Enter your password."],
+  ])("rejects invalid credential input", (input, message) => {
+    const result = accountEntrySchema.safeParse(input);
 
-describe("normalizeAccountEntryMobileNumber", () => {
-  it("does not remove arbitrary characters", () => {
-    expect(normalizeAccountEntryMobileNumber("9000.ABC1")).toBe("9000.ABC1");
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe(message);
   });
 });

@@ -73,11 +73,8 @@ export function VendorScanScreen({
     useState<DevelopmentOptionsState>({ status: "idle" });
   const [selectedDevelopmentVendorId, setSelectedDevelopmentVendorId] =
     useState("");
-  const [developmentError, setDevelopmentError] = useState<string | null>(
-    null,
-  );
-  const [isResolvingDevelopment, setIsResolvingDevelopment] =
-    useState(false);
+  const [developmentError, setDevelopmentError] = useState<string | null>(null);
+  const [isResolvingDevelopment, setIsResolvingDevelopment] = useState(false);
 
   async function resolveCameraPayload(
     payload: string,
@@ -215,9 +212,11 @@ export function VendorScanScreen({
                 spellCheck={false}
                 placeholder="vnd_8K2M4Q7P"
                 aria-describedby={
-                  manualError === null ? "vendor-code-hint" : "vendor-code-error"
+                  manualError === null
+                    ? "vendor-code-hint"
+                    : "vendor-code-error"
                 }
-                className="min-h-12 w-full rounded-2xl border border-ink/15 bg-canvas px-4 py-3 pl-11 font-mono text-base text-ink outline-none transition placeholder:text-ink-muted/65 focus:border-brand-blue-strong focus:ring-3 focus:ring-brand-blue/35"
+                className="min-h-12 w-full rounded-2xl border border-ink/15 bg-canvas px-4 py-3 pl-11 font-mono text-base text-ink transition outline-none placeholder:text-ink-muted/65 focus:border-brand-blue-strong focus:ring-3 focus:ring-brand-blue/35"
               />
             </div>
             {manualError === null ? (
@@ -339,9 +338,7 @@ export function VendorScanScreen({
                 onClick={() => void openDevelopmentVendor()}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isResolvingDevelopment
-                  ? "Opening…"
-                  : "Open simulated scan"}
+                {isResolvingDevelopment ? "Opening…" : "Open simulated scan"}
               </button>
             </div>
           )}

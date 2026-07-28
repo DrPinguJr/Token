@@ -24,10 +24,14 @@ describe("EventHelpScreen", () => {
     expect(
       screen.getByRole("heading", { name: /Tokenly, without the mystery/i }),
     ).toBeVisible();
-    expect(screen.getByText(/not connected to banks, PayNow, SMS/i)).toBeVisible();
+    expect(
+      screen.getByText(/not connected to banks, PayNow, SMS/i),
+    ).toBeVisible();
     expect(screen.getByText(/PayNow checks are manual/i)).toBeVisible();
     expect(screen.getByText(/full or partial refunds/i)).toBeVisible();
-    expect(screen.getByText(/QR frames are processed in the browser/i)).toBeVisible();
+    expect(
+      screen.getByText(/QR frames are processed in the browser/i),
+    ).toBeVisible();
     expect(await screen.findByText("help@tokenly.local")).toBeVisible();
     expect(screen.getByText(/Visit the desk near/i)).toBeVisible();
     expect(screen.queryByText("2468")).not.toBeInTheDocument();
@@ -41,8 +45,8 @@ describe("EventHelpScreen", () => {
           developmentAccess: {
             pin: "2468",
             accounts: [
-              { role: "customer", mobileNumber: "90000001" },
-              { role: "vendor", mobileNumber: "90000002" },
+              { role: "customer" as const, mobileNumber: "90000001" },
+              { role: "vendor" as const, mobileNumber: "90000002" },
             ],
           },
         }))}

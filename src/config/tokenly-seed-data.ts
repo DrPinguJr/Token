@@ -28,7 +28,7 @@ import {
 import { vendorSchema, type Vendor } from "@/modules/vendors";
 import { walletSchema, type Wallet } from "@/modules/wallets";
 
-export const TOKENLY_SEED_VERSION = 2;
+export const TOKENLY_SEED_VERSION = 5;
 
 export const seededDevelopmentAccounts = Object.freeze({
   customer: "90000001",
@@ -95,6 +95,9 @@ function parseAccounts(records: readonly unknown[]): ParsedSeedAccounts {
         accountSchema.parse({
           id: record.id,
           mobileNumber: record.mobileNumber,
+          ...(record.username === undefined
+            ? {}
+            : { username: record.username }),
           displayName: record.displayName,
           role: record.role,
           status: record.status,
@@ -173,7 +176,7 @@ export function createTokenlySeedData(): TokenlySeedData {
     {
       id: "account-customer-001",
       mobileNumber: seededDevelopmentAccounts.customer,
-      displayName: "Ari Rally",
+      displayName: "Lance Tan",
       role: "customer",
       status: "active",
       pinCredential: prototypePinCredential,
@@ -209,7 +212,8 @@ export function createTokenlySeedData(): TokenlySeedData {
     {
       id: "account-admin-001",
       mobileNumber: seededDevelopmentAccounts.administrator,
-      displayName: "Morgan Control",
+      username: "AdminLance",
+      displayName: "Lance Admin",
       role: "administrator",
       status: "active",
       pinCredential: prototypePinCredential,
@@ -285,7 +289,12 @@ export function createTokenlySeedData(): TokenlySeedData {
       id: "customer-001",
       accountId: "account-customer-001",
       walletId: "wallet-customer-001",
+      privateAccessCode: "49281730659482017364920581736490",
+      claimCode: "claim_73049281764059281630495726184015",
+      claimExpiresAt: "2026-08-01T00:00:00.000Z",
+      claimedAt: null,
       publicCode: "cus_7F3Q9K2M",
+      walletQrUpdatedAt: "2026-07-01T01:00:00.000Z",
       onboardingCompletedAt: "2026-07-05T02:00:00.000Z",
       createdAt: "2026-07-01T01:00:00.000Z",
       updatedAt: "2026-07-05T02:00:00.000Z",
@@ -294,7 +303,12 @@ export function createTokenlySeedData(): TokenlySeedData {
       id: "customer-002",
       accountId: "account-customer-002",
       walletId: "wallet-customer-002",
+      privateAccessCode: "80631594720863491572048613957204",
+      claimCode: "claim_51720486391572048631059274806319",
+      claimExpiresAt: "2026-08-01T00:00:00.000Z",
+      claimedAt: "2026-07-06T02:00:00.000Z",
       publicCode: "cus_4D8N2P6R",
+      walletQrUpdatedAt: "2026-07-01T01:04:00.000Z",
       onboardingCompletedAt: "2026-07-06T02:00:00.000Z",
       createdAt: "2026-07-01T01:04:00.000Z",
       updatedAt: "2026-07-06T02:00:00.000Z",
@@ -303,7 +317,12 @@ export function createTokenlySeedData(): TokenlySeedData {
       id: "customer-003",
       accountId: "account-customer-003",
       walletId: "wallet-customer-003",
+      privateAccessCode: "13579024681357902468135790246813",
+      claimCode: "claim_94068135790246813579024681357902",
+      claimExpiresAt: "2026-08-01T00:00:00.000Z",
+      claimedAt: null,
       publicCode: "cus_9M5T1W7C",
+      walletQrUpdatedAt: "2026-07-01T01:08:00.000Z",
       onboardingCompletedAt: null,
       createdAt: "2026-07-01T01:08:00.000Z",
       updatedAt: "2026-07-01T01:08:00.000Z",

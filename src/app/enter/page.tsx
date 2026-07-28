@@ -6,8 +6,7 @@ import { EnterPageClient } from "./enter-page-client";
 
 export const metadata: Metadata = {
   title: "Enter",
-  description:
-    "Enter a fictional local Tokenly account with its seeded mobile number.",
+  description: "Sign in to the local Tokenly super-admin account.",
 };
 
 export default function EnterPage() {

@@ -65,7 +65,7 @@ function ProductQuantityControl({
         type="button"
         disabled={disabled}
         onClick={() => onQuantityChange(1)}
-        className="inline-flex min-h-11 items-center justify-center rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white shadow-soft disabled:cursor-not-allowed disabled:bg-ink-muted focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-focus"
+        className="inline-flex min-h-11 items-center justify-center rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white shadow-soft focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-focus disabled:cursor-not-allowed disabled:bg-ink-muted"
       >
         Add to basket
       </button>
@@ -82,14 +82,14 @@ function ProductQuantityControl({
         disabled={disabled}
         onClick={() => onQuantityChange(quantity - 1)}
         aria-label={`Remove one ${product.name}`}
-        className="grid h-10 w-10 place-items-center rounded-full text-ink transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-focus"
+        className="grid h-10 w-10 place-items-center rounded-full text-ink transition hover:bg-white focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Minus aria-hidden="true" className="h-5 w-5" />
       </button>
       <output
         aria-live="polite"
         aria-label={`${product.name} quantity ${quantity}`}
-        className="min-w-10 text-center font-bold tabular-nums text-ink"
+        className="min-w-10 text-center font-bold text-ink tabular-nums"
       >
         {quantity}
       </output>
@@ -98,7 +98,7 @@ function ProductQuantityControl({
         disabled={disabled || quantity >= Number.MAX_SAFE_INTEGER}
         onClick={() => onQuantityChange(quantity + 1)}
         aria-label={`Add one ${product.name}`}
-        className="grid h-10 w-10 place-items-center rounded-full text-ink transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-focus"
+        className="grid h-10 w-10 place-items-center rounded-full text-ink transition hover:bg-white focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Plus aria-hidden="true" className="h-5 w-5" />
       </button>
@@ -136,9 +136,7 @@ function BasketSummary({ storefront, compact = false }: BasketSummaryProps) {
     basketLines.length > 0 &&
     basketLines.every((line) => line.product !== null) &&
     storefront.vendor.operatingStatus === "open";
-  const hasUnavailableLine = basketLines.some(
-    (line) => line.product === null,
-  );
+  const hasUnavailableLine = basketLines.some((line) => line.product === null);
 
   if (compact) {
     return (
@@ -162,7 +160,7 @@ function BasketSummary({ storefront, compact = false }: BasketSummaryProps) {
             <p className="text-sm font-medium text-ink-muted">
               {basket.itemCount} {basket.itemCount === 1 ? "item" : "items"}
             </p>
-            <p className="text-lg font-bold tabular-nums text-ink">
+            <p className="text-lg font-bold text-ink tabular-nums">
               {estimatedTokenTotal} tokens
             </p>
           </div>
@@ -198,7 +196,10 @@ function BasketSummary({ storefront, compact = false }: BasketSummaryProps) {
             aria-hidden="true"
             className="h-5 w-5 text-brand-pink-strong"
           />
-          <h2 id="basket-summary-heading" className="text-xl font-bold text-ink">
+          <h2
+            id="basket-summary-heading"
+            className="text-xl font-bold text-ink"
+          >
             Your basket
           </h2>
         </div>
@@ -233,8 +234,8 @@ function BasketSummary({ storefront, compact = false }: BasketSummaryProps) {
         </div>
       ) : basketLines.length === 0 ? (
         <p className="mt-5 rounded-2xl bg-canvas-soft p-4 text-sm leading-6 text-ink-muted">
-          Add something you like. Your basket stays with this vendor during
-          this browser session.
+          Add something you like. Your basket stays with this vendor during this
+          browser session.
         </p>
       ) : (
         <ul className="mt-5 space-y-3">
@@ -251,7 +252,7 @@ function BasketSummary({ storefront, compact = false }: BasketSummaryProps) {
                   {line.quantity} × {line.product?.tokenPrice ?? "—"} tokens
                 </p>
               </div>
-              <p className="font-bold tabular-nums text-ink">
+              <p className="font-bold text-ink tabular-nums">
                 {line.product === null
                   ? "—"
                   : line.product.tokenPrice * line.quantity}
@@ -263,7 +264,7 @@ function BasketSummary({ storefront, compact = false }: BasketSummaryProps) {
 
       <div className="mt-5 flex items-center justify-between border-t border-black/5 pt-4">
         <span className="font-medium text-ink-muted">Preview total</span>
-        <strong className="text-xl tabular-nums text-ink">
+        <strong className="text-xl text-ink tabular-nums">
           {estimatedTokenTotal} tokens
         </strong>
       </div>
@@ -296,17 +297,22 @@ export function VendorStorefront({
   loadStorefront,
 }: VendorStorefrontProps) {
   const basket = useCustomerBasket();
-  const [storefront, setStorefront] =
-    useState<CustomerVendorStorefront | null>(null);
+  const [storefront, setStorefront] = useState<CustomerVendorStorefront | null>(
+    null,
+  );
   const [hasLoaded, setHasLoaded] = useState(false);
   const [hasLoadError, setHasLoadError] = useState(false);
   const [reloadVersion, setReloadVersion] = useState(0);
 
   useEffect(() => {
     let active = true;
-    setHasLoaded(false);
-    setHasLoadError(false);
 
+    void Promise.resolve().then(() => {
+      if (active) {
+        setHasLoaded(false);
+        setHasLoadError(false);
+      }
+    });
     void loadStorefront(vendorId)
       .then((loadedStorefront) => {
         if (active) {
@@ -364,8 +370,7 @@ export function VendorStorefront({
     ) ?? [],
   );
   const purchasingDisabled =
-    basket.status !== "ready" ||
-    storefront.vendor.operatingStatus !== "open";
+    basket.status !== "ready" || storefront.vendor.operatingStatus !== "open";
 
   return (
     <section aria-labelledby="storefront-heading">
@@ -382,7 +387,7 @@ export function VendorStorefront({
           src={storefront.vendor.banner}
           alt={`${storefront.vendor.displayName} storefront banner`}
           sizes="(min-width: 1024px) 72vw, 96vw"
-          className="aspect-[16/6] w-full min-h-40"
+          className="aspect-[16/6] min-h-40 w-full"
         />
         <div className="p-5 sm:p-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -472,7 +477,7 @@ export function VendorStorefront({
                         {product.description}
                       </p>
                       <div className="mt-5 flex items-center justify-between gap-3">
-                        <p className="text-xl font-bold tabular-nums text-ink">
+                        <p className="text-xl font-bold text-ink tabular-nums">
                           {product.tokenPrice}{" "}
                           <span className="text-sm font-medium text-ink-muted">
                             tokens

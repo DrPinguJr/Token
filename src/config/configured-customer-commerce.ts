@@ -41,8 +41,7 @@ export interface ConfiguredCustomerCommerceGateway {
   completePurchase(input: CustomerPurchaseInput): Promise<PurchaseReceipt>;
 }
 
-export type ConfiguredCustomerCommerceOptions =
-  CreateLocalRepositoriesOptions;
+export type ConfiguredCustomerCommerceOptions = CreateLocalRepositoriesOptions;
 
 function createPinTransactionRunner(
   options: ConfiguredCustomerCommerceOptions,
@@ -118,7 +117,9 @@ export function createConfiguredCustomerCommerceGateway(
 ): ConfiguredCustomerCommerceGateway {
   return Object.freeze({
     listVendorDirectory: async () =>
-      (await createConfiguredCustomerCommerceQuery(options)).listVendorDirectory(),
+      (
+        await createConfiguredCustomerCommerceQuery(options)
+      ).listVendorDirectory(),
     getVendorStorefront: async (vendorId: string) =>
       (
         await createConfiguredCustomerCommerceQuery(options)

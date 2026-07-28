@@ -154,7 +154,7 @@ export function CustomerAccountQrScreen({
         <p className="text-xs font-bold tracking-[0.16em] text-ink-muted uppercase">
           Public account code
         </p>
-        <p className="mt-1 break-all font-mono text-base font-semibold text-ink">
+        <p className="mt-1 font-mono text-base font-semibold break-all text-ink">
           {state.value.readModel.publicCode}
         </p>
       </div>

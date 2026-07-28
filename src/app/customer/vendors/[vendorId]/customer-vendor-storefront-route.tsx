@@ -18,7 +18,7 @@ export function CustomerVendorStorefrontRoute({
   vendorId,
 }: CustomerVendorStorefrontRouteProps) {
   const runtime = useTokenlyRuntime();
-  const commerce = useMemo(createConfiguredCustomerCommerceGateway, []);
+  const commerce = useMemo(() => createConfiguredCustomerCommerceGateway(), []);
   const loadStorefront = useCallback(
     (requestedVendorId: string) =>
       commerce.getVendorStorefront(requestedVendorId),
@@ -36,14 +36,8 @@ export function CustomerVendorStorefrontRoute({
   }
 
   return (
-    <CustomerBasketProvider
-      actorAccountId={actorAccountId}
-      vendorId={vendorId}
-    >
-      <VendorStorefront
-        vendorId={vendorId}
-        loadStorefront={loadStorefront}
-      />
+    <CustomerBasketProvider actorAccountId={actorAccountId} vendorId={vendorId}>
+      <VendorStorefront vendorId={vendorId} loadStorefront={loadStorefront} />
     </CustomerBasketProvider>
   );
 }

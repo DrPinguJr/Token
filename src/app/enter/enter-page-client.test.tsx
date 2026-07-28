@@ -73,14 +73,16 @@ describe("EnterPageClient", () => {
 
     render(<EnterPageClient />);
     await user.type(
-      screen.getByRole("textbox", { name: /mobile number/i }),
-      "90000002",
+      screen.getByRole("textbox", { name: /username/i }),
+      "AdminLance",
     );
+    await user.type(screen.getByLabelText(/password/i), "Lance888!");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() => {
       expect(enterAccount).toHaveBeenCalledWith({
-        mobileNumber: "90000002",
+        username: "AdminLance",
+        password: "Lance888!",
       });
       expect(enterPageMocks.replace).toHaveBeenCalledTimes(1);
       expect(enterPageMocks.replace).toHaveBeenCalledWith("/vendor/dashboard");

@@ -24,6 +24,8 @@ export const auditEventTypeSchema = z.enum([
   "settlement_status_changed",
   "administrative_adjustment_created",
   "event_settings_changed",
+  "customer_claim_qr_claimed",
+  "customer_wallet_qr_regenerated",
 ]);
 
 export const auditTargetTypeSchema = z.enum([

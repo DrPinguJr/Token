@@ -26,14 +26,15 @@ Names are logical and may be prefixed by the implementation’s data namespace.
 
 ### `accounts`
 
-| Field                    | Notes                                                       |
-| ------------------------ | ----------------------------------------------------------- |
-| `id`                     | Opaque primary key                                          |
-| `mobileNumber`           | Prototype entry identifier; indexed and unique in seed data |
-| `displayName`            | Fictional name                                              |
-| `role`                   | `customer`, `vendor`, `staff`, or `administrator`           |
-| `status`                 | `active` or `disabled`                                      |
-| `createdAt`, `updatedAt` | Lifecycle timestamps                                        |
+| Field                    | Notes                                                                 |
+| ------------------------ | --------------------------------------------------------------------- |
+| `id`                     | Opaque primary key                                                    |
+| `mobileNumber`           | Legacy/local contact identifier; indexed and unique in seed data      |
+| `username`               | Optional local operational login name for admin/vendor-style accounts |
+| `displayName`            | Fictional name                                                        |
+| `role`                   | `customer`, `vendor`, `staff`, or `administrator`                     |
+| `status`                 | `active` or `disabled`                                                |
+| `createdAt`, `updatedAt` | Lifecycle timestamps                                                  |
 
 Normal account repository reads return only this credential-free shape.
 
@@ -58,14 +59,24 @@ subsequent changes require verification of the configured PIN.
 
 ### `customers`
 
-| Field                    | Notes                                     |
-| ------------------------ | ----------------------------------------- |
-| `id`                     | Customer primary key                      |
-| `accountId`              | Unique account relationship               |
-| `walletId`               | Unique customer wallet relationship       |
-| `publicCode`             | Opaque QR lookup code; indexed and unique |
-| `onboardingCompletedAt`  | Optional completion timestamp             |
-| `createdAt`, `updatedAt` | Lifecycle timestamps                      |
+| Field                    | Notes                                   |
+| ------------------------ | --------------------------------------- |
+| `id`                     | Customer primary key                    |
+| `accountId`              | Unique account relationship             |
+| `walletId`               | Unique customer wallet relationship     |
+| `privateAccessCode`      | Opaque private account-link code        |
+| `claimCode`              | Opaque one-time account-claim code      |
+| `claimExpiresAt`         | Claim expiry timestamp                  |
+| `claimedAt`              | Claim redemption timestamp, if redeemed |
+| `publicCode`             | Opaque vendor-facing wallet QR code     |
+| `walletQrUpdatedAt`      | Last wallet QR regeneration timestamp   |
+| `onboardingCompletedAt`  | Optional completion timestamp           |
+| `createdAt`, `updatedAt` | Lifecycle timestamps                    |
+
+`claimCode` and `privateAccessCode` are not indexed in the current local
+prototype; claim/private account routes scan the local customer records. The
+vendor-facing `publicCode` remains indexed and is the only customer credential
+inside wallet QR payloads.
 
 ### `wallets`
 
@@ -275,9 +286,12 @@ The database also stores a small schema/seed metadata record:
 Version upgrades must be additive or explicitly migrate records in `onupgradeneeded`. Never clear user data during an ordinary version upgrade. Reset/reseed is a separate, confirmed development action.
 
 Local data version `2` introduces strict ledger semantics and prefix-free
-idempotency reservations. Version `1` data is rejected without mutation and
-requires an explicit development reset/reseed; it is never cleared
-automatically.
+idempotency reservations. Version `3` adds one-time claim QR, private account
+link, and regeneratable wallet QR fields. Version `4` changes local
+operational entry to username/password for the seeded super-admin. Version `5`
+replaces readable seeded private-account links with long numeric opaque links.
+Older local data is rejected without mutation and requires an explicit
+development reset/reseed; it is never cleared automatically.
 
 ## Required indexes and uniqueness
 

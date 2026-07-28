@@ -6,7 +6,7 @@ import { createConfiguredCustomerCommerceGateway } from "@/config/configured-cus
 import { VendorDirectory } from "@/modules/customer-commerce";
 
 export function CustomerVendorsRoute() {
-  const commerce = useMemo(createConfiguredCustomerCommerceGateway, []);
+  const commerce = useMemo(() => createConfiguredCustomerCommerceGateway(), []);
   const loadVendors = useCallback(
     () => commerce.listVendorDirectory(),
     [commerce],

@@ -21,7 +21,11 @@ describe("Tokenly QR payload", () => {
       encoded: "tokenly://qr/v1/vendor/vnd_8K2M4Q7P",
     },
   ])("round-trips a strict $kind payload", (fixture) => {
-    const encoded = buildTokenlyQrPayload(fixture);
+    const encoded = buildTokenlyQrPayload({
+      version: fixture.version,
+      kind: fixture.kind,
+      publicCode: fixture.publicCode,
+    });
 
     expect(encoded).toBe(fixture.encoded);
     expect(parseTokenlyQrPayload(encoded)).toEqual({

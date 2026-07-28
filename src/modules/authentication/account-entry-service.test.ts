@@ -58,9 +58,6 @@ function createTestContext(
     accounts: {
       getById: async (id) =>
         accounts.find((account) => account.id === id) ?? null,
-      getByMobileNumber: async (mobileNumber) =>
-        accounts.find((account) => account.mobileNumber === mobileNumber) ??
-        null,
     },
     customers: {
       getByAccountId: async (accountId) =>
@@ -95,27 +92,28 @@ function createTestContext(
 }
 
 describe("AccountEntryService", () => {
-  it("normalizes mobile input, resolves incomplete customer onboarding, and audits safely", async () => {
-    const account = createAccount();
-    const customer = createCustomer();
-    const { service, audits } = createTestContext([account], [customer]);
+  it("resolves the seeded super-admin credential and audits safely", async () => {
+    const account = createAccount({
+      id: "account-admin-001",
+      mobileNumber: "90000004",
+      displayName: "Lance Admin",
+      role: "administrator",
+    });
+    const { service, audits } = createTestContext([account]);
 
     const session = await service.enter({
-      mobileNumber: "+65 9000-0001",
+      username: "AdminLance",
+      password: "Lance888!",
     });
 
     expect(session).toEqual({
       account: {
         id: account.id,
         displayName: account.displayName,
-        role: "customer",
+        role: "administrator",
       },
-      customer: {
-        id: customer.id,
-        walletId: customer.walletId,
-        onboardingCompletedAt: null,
-      },
-      destination: "/customer/onboarding",
+      customer: null,
+      destination: "/admin/dashboard",
     });
     expect(audits).toHaveLength(1);
     expect(audits[0]).toMatchObject({
@@ -124,15 +122,14 @@ describe("AccountEntryService", () => {
       targetType: "account",
       targetId: account.id,
       metadata: {
-        entryMethod: "mobile_number",
-        mobileNumberVerified: false,
+        entryMethod: "password",
         prototypeSession: true,
       },
     });
-    expect(JSON.stringify(audits[0])).not.toContain("90000001");
+    expect(JSON.stringify(audits[0])).not.toContain("Lance888!");
   });
 
-  it("routes completed customers and each operational role correctly", async () => {
+  it("routes each role correctly through the development switcher", async () => {
     const cases = [
       {
         account: createAccount(),
@@ -182,25 +179,28 @@ describe("AccountEntryService", () => {
       );
 
       await expect(
-        service.enter({
-          mobileNumber: testCase.account.mobileNumber,
-        }),
+        service.enterDevelopmentAccount(testCase.account.id),
       ).resolves.toMatchObject({
         destination: testCase.destination,
       });
     }
   });
 
-  it("uses the same generic error for unknown, disabled, and incomplete accounts", async () => {
-    const disabledAccount = createAccount({ status: "disabled" });
-    const activeAccount = createAccount({
-      id: "account-customer-002",
-      mobileNumber: "90000005",
+  it("uses the same generic error for wrong credentials and disabled admin accounts", async () => {
+    const disabledAdmin = createAccount({
+      id: "account-admin-001",
+      mobileNumber: "90000004",
+      role: "administrator",
+      status: "disabled",
     });
-    const { service } = createTestContext([disabledAccount, activeAccount]);
+    const { service } = createTestContext([disabledAdmin]);
 
-    for (const mobileNumber of ["90000009", "90000001", "90000005"]) {
-      await expect(service.enter({ mobileNumber })).rejects.toMatchObject({
+    for (const input of [
+      { username: "AdminLance", password: "wrong-password" },
+      { username: "UnknownAdmin", password: "Lance888!" },
+      { username: "AdminLance", password: "Lance888!" },
+    ]) {
+      await expect(service.enter(input)).rejects.toMatchObject({
         name: "AccountEntryFailedError",
         code: "ACCOUNT_ENTRY_FAILED",
         message: ACCOUNT_ENTRY_FAILURE_MESSAGE,
@@ -209,7 +209,11 @@ describe("AccountEntryService", () => {
   });
 
   it("does not return a successful entry when its audit append fails", async () => {
-    const account = createAccount({ role: "staff" });
+    const account = createAccount({
+      id: "account-admin-001",
+      mobileNumber: "90000004",
+      role: "administrator",
+    });
     const { service } = createTestContext(
       [account],
       [],
@@ -219,7 +223,7 @@ describe("AccountEntryService", () => {
     );
 
     await expect(
-      service.enter({ mobileNumber: account.mobileNumber }),
+      service.enter({ username: "AdminLance", password: "Lance888!" }),
     ).rejects.toThrow("Audit storage failed");
   });
 
@@ -264,7 +268,8 @@ describe("AccountEntryService", () => {
     const error = new AccountEntryFailedError();
 
     expect(error.message).toBe(ACCOUNT_ENTRY_FAILURE_MESSAGE);
-    expect(error).not.toHaveProperty("mobileNumber");
+    expect(error).not.toHaveProperty("username");
+    expect(error).not.toHaveProperty("password");
     expect(error).not.toHaveProperty("accountId");
   });
 });

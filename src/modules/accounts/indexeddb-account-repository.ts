@@ -84,6 +84,7 @@ export class IndexedDbAccountRepository
             containsNormalizedSearch(parsedQuery.search, [
               account.displayName,
               account.mobileNumber,
+              account.username ?? "",
             ])),
       ),
       ({ displayName }) => displayName,

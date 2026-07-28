@@ -26,8 +26,7 @@ const manualVendorCodeCommandSchema = z
   })
   .strict();
 
-export interface VendorQrResolutionRepositories
-  extends CustomerQrAccessRepositories {
+export interface VendorQrResolutionRepositories extends CustomerQrAccessRepositories {
   readonly vendors: Pick<VendorRepository, "getByPublicCode">;
 }
 
@@ -38,8 +37,7 @@ export interface ResolvedVendorQrTarget {
 }
 
 export type VendorQrResolutionErrorCode =
-  | "INVALID_VENDOR_QR"
-  | "VENDOR_CODE_NOT_FOUND";
+  "INVALID_VENDOR_QR" | "VENDOR_CODE_NOT_FOUND";
 
 const vendorQrResolutionErrorMessages = {
   INVALID_VENDOR_QR: "The value is not a valid Tokenly vendor code.",
@@ -70,10 +68,7 @@ export class VendorQrResolver {
     input: unknown,
   ): Promise<ResolvedVendorQrTarget> {
     const command = scannedVendorQrCommandSchema.parse(input);
-    await resolveActiveCustomerForQr(
-      command.actorAccountId,
-      this.repositories,
-    );
+    await resolveActiveCustomerForQr(command.actorAccountId, this.repositories);
 
     let parsedPayload: TokenlyQrPayload;
     try {
@@ -96,10 +91,7 @@ export class VendorQrResolver {
     input: unknown,
   ): Promise<ResolvedVendorQrTarget> {
     const command = manualVendorCodeCommandSchema.parse(input);
-    await resolveActiveCustomerForQr(
-      command.actorAccountId,
-      this.repositories,
-    );
+    await resolveActiveCustomerForQr(command.actorAccountId, this.repositories);
     const publicCode = vendorQrPublicCodeSchema.safeParse(command.publicCode);
 
     if (!publicCode.success) {

@@ -56,15 +56,11 @@ export function CustomerScanRoute() {
   );
   const resolveManualVendor = useCallback(
     (publicCode: string): Promise<ResolvedVendorQrTarget> =>
-      resolveConfiguredManualVendorCode(
-        requireActorAccountId(),
-        publicCode,
-      ),
+      resolveConfiguredManualVendorCode(requireActorAccountId(), publicCode),
     [requireActorAccountId],
   );
   const listDevelopmentVendors = useCallback(
-    () =>
-      listConfiguredDevelopmentVendorOptions(requireActorAccountId()),
+    () => listConfiguredDevelopmentVendorOptions(requireActorAccountId()),
     [requireActorAccountId],
   );
   const resolveDevelopmentVendor = useCallback(

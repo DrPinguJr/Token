@@ -16,22 +16,12 @@ export interface CustomerPaymentRouteProps {
   readonly vendorId: string;
 }
 
-export function CustomerPaymentRoute({
-  vendorId,
-}: CustomerPaymentRouteProps) {
+export function CustomerPaymentRoute({ vendorId }: CustomerPaymentRouteProps) {
   const router = useRouter();
   const runtime = useTokenlyRuntime();
-  const commerce = useMemo(createConfiguredCustomerCommerceGateway, []);
-  const loadReview = useCallback(
-    (input: Parameters<typeof commerce.getPaymentReview>[0]) =>
-      commerce.getPaymentReview(input),
-    [commerce],
-  );
-  const completePurchase = useCallback(
-    (input: Parameters<typeof commerce.completePurchase>[0]) =>
-      commerce.completePurchase(input),
-    [commerce],
-  );
+  const commerce = useMemo(() => createConfiguredCustomerCommerceGateway(), []);
+  const loadReview = commerce.getPaymentReview;
+  const completePurchase = commerce.completePurchase;
   const openReceipt = useCallback(
     (receipt: PurchaseReceipt) => {
       router.push(
@@ -53,10 +43,7 @@ export function CustomerPaymentRoute({
   }
 
   return (
-    <CustomerBasketProvider
-      actorAccountId={actorAccountId}
-      vendorId={vendorId}
-    >
+    <CustomerBasketProvider actorAccountId={actorAccountId} vendorId={vendorId}>
       <CustomerPaymentReview
         actorAccountId={actorAccountId}
         customerId={customerId}

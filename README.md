@@ -33,14 +33,14 @@ Copy `.env.example` to `.env.local` and set the flag to `true` only when testing
 
 The required core seed contract is:
 
-| Role          | Mobile number | Development PIN |
-| ------------- | ------------- | --------------- |
-| Customer      | `90000001`    | `2468`          |
-| Vendor        | `90000002`    | `2468`          |
-| Event staff   | `90000003`    | `2468`          |
-| Administrator | `90000004`    | `2468`          |
+| Role          | Local username | Mobile number | Development PIN |
+| ------------- | -------------- | ------------- | --------------- |
+| Customer      | QR-only        | `90000001`    | `2468`          |
+| Vendor        | Later          | `90000002`    | `2468`          |
+| Event staff   | Later          | `90000003`    | `2468`          |
+| Administrator | `AdminLance`   | `90000004`    | `2468`          |
 
-Additional fictional accounts and event records are required in the implemented seed. The shared PIN is public development data, not production security. Mobile numbers are not verified in the local prototype.
+Additional fictional accounts and event records are required in the implemented seed. The shared PIN is public development data, not production security. Tokeners do not sign in with mobile numbers; they receive QR/private-link access.
 
 ## Architecture
 

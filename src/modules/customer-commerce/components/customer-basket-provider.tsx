@@ -87,31 +87,37 @@ export function CustomerBasketProvider({
   const storeRef = useRef<BrowserCustomerBasketStore | null>(null);
 
   useEffect(() => {
-    try {
-      const resolvedStore =
-        store ?? new BrowserCustomerBasketStore(window.sessionStorage);
-      const loadedSnapshot = resolvedStore.read(
-        actorAccountId,
-        vendorId,
-        createIdempotencyKey,
-      );
-      storeRef.current = resolvedStore;
-      setSnapshot(loadedSnapshot);
-      setErrorMessage(null);
-      setStatus("ready");
-    } catch {
-      storeRef.current = null;
-      setSnapshot(null);
-      setErrorMessage(basketErrorMessage);
-      setStatus("error");
-    }
-  }, [
-    actorAccountId,
-    createIdempotencyKey,
-    reloadVersion,
-    store,
-    vendorId,
-  ]);
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (!active) {
+        return;
+      }
+
+      try {
+        const resolvedStore =
+          store ?? new BrowserCustomerBasketStore(window.sessionStorage);
+        const loadedSnapshot = resolvedStore.read(
+          actorAccountId,
+          vendorId,
+          createIdempotencyKey,
+        );
+        storeRef.current = resolvedStore;
+        setSnapshot(loadedSnapshot);
+        setErrorMessage(null);
+        setStatus("ready");
+      } catch {
+        storeRef.current = null;
+        setSnapshot(null);
+        setErrorMessage(basketErrorMessage);
+        setStatus("error");
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [actorAccountId, createIdempotencyKey, reloadVersion, store, vendorId]);
 
   const persistItems = useCallback(
     (items: readonly CustomerBasketItem[]): void => {
@@ -141,10 +147,7 @@ export function CustomerBasketProvider({
 
   const setQuantity = useCallback(
     (productId: string, quantity: number): void => {
-      if (
-        snapshot === null ||
-        !domainIdSchema.safeParse(productId).success
-      ) {
+      if (snapshot === null || !domainIdSchema.safeParse(productId).success) {
         return;
       }
 

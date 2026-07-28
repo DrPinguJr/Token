@@ -21,9 +21,7 @@ type CameraState =
 
 export interface VendorCameraScannerProps {
   readonly adapter: VendorCameraScannerAdapter;
-  readonly onPayload: (
-    payload: string,
-  ) => Promise<VendorCameraPayloadOutcome>;
+  readonly onPayload: (payload: string) => Promise<VendorCameraPayloadOutcome>;
 }
 
 function isCameraPermissionDenied(error: unknown): boolean {
@@ -119,9 +117,7 @@ export function VendorCameraScanner({
       sessionRef.current = session;
       setCameraState("active");
     } catch (error: unknown) {
-      setCameraState(
-        isCameraPermissionDenied(error) ? "denied" : "error",
-      );
+      setCameraState(isCameraPermissionDenied(error) ? "denied" : "error");
     }
   }, [adapter, handlePayload, stopSession]);
 
@@ -255,16 +251,12 @@ interface CameraFeedbackProps {
   readonly retryLabel: string;
 }
 
-function CameraFeedback({
-  message,
-  onRetry,
-  retryLabel,
-}: CameraFeedbackProps) {
+function CameraFeedback({ message, onRetry, retryLabel }: CameraFeedbackProps) {
   return (
     <div className="mt-5">
       <p
         role="alert"
-        className="flex items-start gap-2 rounded-2xl bg-white/80 px-4 py-3 text-sm font-medium leading-6 text-ink"
+        className="flex items-start gap-2 rounded-2xl bg-white/80 px-4 py-3 text-sm leading-6 font-medium text-ink"
       >
         <CameraOff
           aria-hidden="true"

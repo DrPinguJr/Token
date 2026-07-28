@@ -31,7 +31,9 @@ describe("CustomerAccountQrScreen", () => {
     ).toHaveAttribute("src", "data:image/png;base64,abc");
     expect(screen.getByText(accountQr.publicCode)).toBeVisible();
     expect(generateQrImage).toHaveBeenCalledWith(accountQr.payload);
-    expect(screen.getByText(/does not contain your mobile number/i)).toBeVisible();
+    expect(
+      screen.getByText(/does not contain your mobile number/i),
+    ).toBeVisible();
     expect(screen.queryByText("90000001")).not.toBeInTheDocument();
     expect(screen.queryByText("2468")).not.toBeInTheDocument();
   });

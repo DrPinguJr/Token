@@ -51,19 +51,22 @@ Definitions:
 
 ### Authentication and onboarding
 
-- Local account entry with mobile number.
+- Local super-admin entry with a seeded username and password.
 - Locally persisted sessions and role-based route access.
 - Four-digit wallet PIN setup and verification where required.
 - Simulated lockout after repeated failures with generic failure messages.
-- A customer-only onboarding route at `/customer/onboarding`.
+- Tokeners do not use username, password, mobile-number, or PIN sign-in.
+- Tokeners receive a one-time claim QR and then save a private account link.
 - A development-only role switcher and data reset/reseed controls, enabled only by environment configuration.
-- Clear disclosure that mobile numbers are not verified in the prototype.
+- Clear disclosure that local operational credentials are prototype-only.
 
-There is no SMS OTP or real mobile-number ownership verification.
+There is no SMS OTP, real mobile-number ownership verification, Supabase Auth, or production identity recovery.
 
 ### Customer experience
 
-- Home with event identity, customer name, prominent wallet balance, payment action, vendor browsing, account QR, recent activity, and help.
+- Private account link with tokener name, current ledger-derived balance, and wallet QR.
+- One-time claim QR that reveals the private account link once, then expires.
+- Wallet QR regeneration that invalidates older wallet QR codes while keeping the private account link active.
 - Account QR display and browser scanner/manual vendor-code entry.
 - Vendor directory, storefront, products, basket, server-style price recalculation, PIN confirmation, and receipt.
 - Transaction and refund history with loading, empty, error, and success states.
@@ -107,12 +110,12 @@ Preferred customer phrases include “Welcome to Tokenly”, “Welcome back, To
 
 Required entry accounts:
 
-| Role          | Mobile number | Development PIN |
-| ------------- | ------------- | --------------- |
-| Customer      | `90000001`    | `2468`          |
-| Vendor        | `90000002`    | `2468`          |
-| Event staff   | `90000003`    | `2468`          |
-| Administrator | `90000004`    | `2468`          |
+| Role          | Local username | Mobile number | Development PIN |
+| ------------- | -------------- | ------------- | --------------- |
+| Customer      | QR-only        | `90000001`    | `2468`          |
+| Vendor        | Later          | `90000002`    | `2468`          |
+| Event staff   | Later          | `90000003`    | `2468`          |
+| Administrator | `AdminLance`   | `90000004`    | `2468`          |
 
 At least one additional fictional customer, vendor account, and staff account must be seeded. The overall dataset includes at least three vendors (food and drinks, event merchandise, and floorball equipment), multiple products, issuances, purchases, one partial refund, one full refund, one settlement, and linked audit records. Never use real personal information.
 
@@ -130,7 +133,7 @@ Test major screens at 390 px, tablet widths, and 1280 px. Mobile uses stacked co
 
 ## Explicit non-goals for this deliverable
 
-- Supabase authentication, database, Storage, migrations, or row-level security
+- Supabase-backed application runtime, authentication, Storage, row-level security, or production repository adapters
 - Vercel setup, deployment, domains, or environment configuration
 - GitHub publishing or automation
 - SMS OTP and real mobile-number verification

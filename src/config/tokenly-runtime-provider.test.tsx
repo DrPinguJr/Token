@@ -64,9 +64,14 @@ function RuntimeProbe() {
       <button
         type="button"
         disabled={runtime.status !== "ready"}
-        onClick={() => void runtime.enterAccount({ mobileNumber: "90000009" })}
+        onClick={() =>
+          void runtime.enterAccount({
+            username: "AdminLance",
+            password: "Lance888!",
+          })
+        }
       >
-        Enter incomplete customer
+        Enter super-admin
       </button>
       <button
         type="button"
@@ -152,18 +157,18 @@ describe("TokenlyRuntimeProvider", () => {
 
     await user.click(
       screen.getByRole("button", {
-        name: "Enter incomplete customer",
+        name: "Enter super-admin",
       }),
     );
     await waitFor(() => {
       expect(screen.getByLabelText("session destination")).toHaveTextContent(
-        "/customer/onboarding",
+        "/admin/dashboard",
       );
     });
     expect(window.localStorage.getItem(TOKENLY_LOCAL_SESSION_KEY)).toBe(
       JSON.stringify({
         version: TOKENLY_LOCAL_SESSION_VERSION,
-        accountId: "account-customer-003",
+        accountId: "account-admin-001",
       }),
     );
 

@@ -71,8 +71,9 @@ export function CustomerPaymentReview({
   onReceipt,
 }: CustomerPaymentReviewProps) {
   const basket = useCustomerBasket();
-  const [review, setReview] =
-    useState<CustomerPaymentReviewReadModel | null>(null);
+  const [review, setReview] = useState<CustomerPaymentReviewReadModel | null>(
+    null,
+  );
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
@@ -89,19 +90,30 @@ export function CustomerPaymentReview({
   );
 
   useEffect(() => {
+    let active = true;
+
     if (
       basket.status !== "ready" ||
       basket.snapshot === null ||
       basket.snapshot.items.length === 0
     ) {
-      setReview(null);
-      setReviewError(null);
-      return;
+      void Promise.resolve().then(() => {
+        if (active) {
+          setReview(null);
+          setReviewError(null);
+        }
+      });
+      return () => {
+        active = false;
+      };
     }
 
-    let active = true;
-    setReview(null);
-    setReviewError(null);
+    void Promise.resolve().then(() => {
+      if (active) {
+        setReview(null);
+        setReviewError(null);
+      }
+    });
 
     void loadReview({
       actorAccountId,
@@ -200,9 +212,7 @@ export function CustomerPaymentReview({
           aria-hidden="true"
           className="mx-auto h-12 w-12 text-brand-mint-strong"
         />
-        <h1 className="mt-4 text-3xl font-bold text-ink">
-          Enjoy your order
-        </h1>
+        <h1 className="mt-4 text-3xl font-bold text-ink">Enjoy your order</h1>
         <p className="mt-2 text-ink-muted">
           Payment {completedReceipt.reference} is complete. Opening your
           receipt…
@@ -225,10 +235,7 @@ export function CustomerPaymentReview({
     );
   }
 
-  if (
-    basket.snapshot === null ||
-    basket.snapshot.items.length === 0
-  ) {
+  if (basket.snapshot === null || basket.snapshot.items.length === 0) {
     return (
       <CustomerCommerceEmptyState
         title="Your basket is empty"
@@ -260,8 +267,7 @@ export function CustomerPaymentReview({
     return <CustomerCommerceLoading label="Checking your basket…" />;
   }
 
-  const hasEnoughTokens =
-    review.estimatedTokenTotal <= review.customerBalance;
+  const hasEnoughTokens = review.estimatedTokenTotal <= review.customerBalance;
   const vendorIsOpen = review.vendor.operatingStatus === "open";
 
   return (
@@ -296,10 +302,7 @@ export function CustomerPaymentReview({
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-bold text-ink">Basket items</h2>
               <span className="text-sm font-medium text-ink-muted">
-                {review.items.reduce(
-                  (total, item) => total + item.quantity,
-                  0,
-                )}{" "}
+                {review.items.reduce((total, item) => total + item.quantity, 0)}{" "}
                 items
               </span>
             </div>
@@ -321,7 +324,7 @@ export function CustomerPaymentReview({
                       {item.quantity} × {item.tokenPrice} tokens
                     </p>
                   </div>
-                  <p className="font-bold tabular-nums text-ink">
+                  <p className="font-bold text-ink tabular-nums">
                     {item.lineTokenTotal}
                   </p>
                 </li>
@@ -372,10 +375,7 @@ export function CustomerPaymentReview({
               className="mt-2 min-h-12 w-full rounded-2xl bg-canvas-soft px-4 py-3 text-center text-2xl font-bold tracking-[0.5em] text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-wait"
             />
             {pinError === null ? (
-              <p
-                id="customer-pin-help"
-                className="mt-2 text-sm text-ink-muted"
-              >
+              <p id="customer-pin-help" className="mt-2 text-sm text-ink-muted">
                 Enter exactly four digits.
               </p>
             ) : (
@@ -399,10 +399,8 @@ export function CustomerPaymentReview({
 
             <button
               type="submit"
-              disabled={
-                isSubmitting || !hasEnoughTokens || !vendorIsOpen
-              }
-              className="mt-5 hidden min-h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-3 font-semibold text-white shadow-raised disabled:cursor-not-allowed disabled:bg-ink-muted focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-focus lg:inline-flex"
+              disabled={isSubmitting || !hasEnoughTokens || !vendorIsOpen}
+              className="mt-5 hidden min-h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-3 font-semibold text-white shadow-raised focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-focus disabled:cursor-not-allowed disabled:bg-ink-muted lg:inline-flex"
             >
               <ShieldCheck aria-hidden="true" className="h-5 w-5" />
               {isSubmitting
@@ -417,7 +415,7 @@ export function CustomerPaymentReview({
           <dl className="mt-5 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-ink-muted">Preview total</dt>
-              <dd className="font-bold tabular-nums text-ink">
+              <dd className="font-bold text-ink tabular-nums">
                 {review.estimatedTokenTotal} tokens
               </dd>
             </div>
@@ -426,7 +424,7 @@ export function CustomerPaymentReview({
                 <WalletCards aria-hidden="true" className="h-4 w-4" />
                 Wallet balance
               </dt>
-              <dd className="font-bold tabular-nums text-ink">
+              <dd className="font-bold text-ink tabular-nums">
                 {review.customerBalance} tokens
               </dd>
             </div>
@@ -458,7 +456,7 @@ export function CustomerPaymentReview({
       <div className="sticky bottom-20 z-20 mt-6 rounded-card bg-white p-4 shadow-floating lg:hidden">
         <div className="mb-3 flex items-center justify-between gap-3">
           <span className="text-sm font-medium text-ink-muted">Total</span>
-          <strong className="text-xl tabular-nums text-ink">
+          <strong className="text-xl text-ink tabular-nums">
             {review.estimatedTokenTotal} tokens
           </strong>
         </div>
@@ -466,7 +464,7 @@ export function CustomerPaymentReview({
           type="submit"
           form="customer-payment-form"
           disabled={isSubmitting || !hasEnoughTokens || !vendorIsOpen}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-3 font-semibold text-white shadow-raised disabled:cursor-not-allowed disabled:bg-ink-muted focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-focus"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-3 font-semibold text-white shadow-raised focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-focus disabled:cursor-not-allowed disabled:bg-ink-muted"
         >
           <ShieldCheck aria-hidden="true" className="h-5 w-5" />
           {isSubmitting ? "Confirming…" : "Confirm payment"}

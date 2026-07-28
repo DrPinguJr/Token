@@ -20,13 +20,13 @@ describe("CustomerAccountQrQuery", () => {
       },
     });
 
-    await expect(query.getForAccount(activeCustomerAccount.id)).resolves.toEqual(
-      {
-        customerId: activeCustomer.id,
-        publicCode: activeCustomer.publicCode,
-        payload: "tokenly://qr/v1/customer/cus_7F3Q9K2M",
-      },
-    );
+    await expect(
+      query.getForAccount(activeCustomerAccount.id),
+    ).resolves.toEqual({
+      customerId: activeCustomer.id,
+      publicCode: activeCustomer.publicCode,
+      payload: "tokenly://qr/v1/customer/cus_7F3Q9K2M",
+    });
   });
 
   it.each([

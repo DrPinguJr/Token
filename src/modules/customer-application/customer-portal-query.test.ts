@@ -76,9 +76,7 @@ const vendor = Object.freeze({
   updatedAt: "2026-07-01T01:00:00.000Z",
 } satisfies Vendor);
 
-function createLedgerEntry(
-  overrides: Partial<LedgerEntry>,
-): LedgerEntry {
+function createLedgerEntry(overrides: Partial<LedgerEntry>): LedgerEntry {
   return Object.freeze({
     id: "ledger-issuance-001",
     walletId: wallet.id,

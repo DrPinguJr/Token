@@ -31,13 +31,7 @@ export function CustomerCommerceImage({
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        sizes={sizes}
-        className="object-cover"
-      />
+      <Image src={src} alt={alt} fill sizes={sizes} className="object-cover" />
     </div>
   );
 }

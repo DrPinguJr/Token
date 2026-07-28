@@ -16,8 +16,7 @@ function createAdapter(
   }> = {},
 ) {
   let emitPayload:
-    | ((payload: string) => Promise<VendorCameraPayloadOutcome>)
-    | null = null;
+    ((payload: string) => Promise<VendorCameraPayloadOutcome>) | null = null;
   const stop = vi.fn();
   const adapter: VendorCameraScannerAdapter = {
     checkSupport: vi.fn(async () => options.supported ?? true),
@@ -51,10 +50,7 @@ describe("VendorCameraScanner", () => {
 
     render(
       <StrictMode>
-        <VendorCameraScanner
-          adapter={camera.adapter}
-          onPayload={onPayload}
-        />
+        <VendorCameraScanner adapter={camera.adapter} onPayload={onPayload} />
       </StrictMode>,
     );
 
@@ -80,7 +76,7 @@ describe("VendorCameraScanner", () => {
     render(
       <VendorCameraScanner
         adapter={camera.adapter}
-        onPayload={vi.fn(async () => "accepted")}
+        onPayload={vi.fn(async () => "accepted" as const)}
       />,
     );
 
@@ -102,7 +98,7 @@ describe("VendorCameraScanner", () => {
     const { rerender } = render(
       <VendorCameraScanner
         adapter={denied.adapter}
-        onPayload={vi.fn(async () => "accepted")}
+        onPayload={vi.fn(async () => "accepted" as const)}
       />,
     );
 
@@ -110,7 +106,9 @@ describe("VendorCameraScanner", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /camera access was denied/i,
     );
-    expect(screen.queryByText(/private device detail/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/private device detail/i),
+    ).not.toBeInTheDocument();
 
     const failed = createAdapter({
       startError: new Error("camera-device-secret"),
@@ -118,7 +116,7 @@ describe("VendorCameraScanner", () => {
     rerender(
       <VendorCameraScanner
         adapter={failed.adapter}
-        onPayload={vi.fn(async () => "accepted")}
+        onPayload={vi.fn(async () => "accepted" as const)}
       />,
     );
     await user.click(
@@ -137,7 +135,7 @@ describe("VendorCameraScanner", () => {
     render(
       <VendorCameraScanner
         adapter={camera.adapter}
-        onPayload={vi.fn(async () => "invalid")}
+        onPayload={vi.fn(async () => "invalid" as const)}
       />,
     );
 

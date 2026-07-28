@@ -13,7 +13,13 @@ import {
 } from "./mobile-account-entry-schema";
 
 export const ACCOUNT_ENTRY_FAILURE_MESSAGE =
-  "We could not enter that account. Check the mobile number and try again.";
+  "We could not enter that account. Check the username and password and try again.";
+
+const seededSuperAdminCredential = Object.freeze({
+  accountId: "account-admin-001",
+  username: "AdminLance",
+  password: "Lance888!",
+});
 
 export class AccountEntryFailedError extends Error {
   public readonly code = "ACCOUNT_ENTRY_FAILED";
@@ -34,7 +40,7 @@ export class DevelopmentAccountEntryDisabledError extends Error {
 }
 
 export interface AccountEntryRepositories {
-  readonly accounts: Pick<AccountRepository, "getById" | "getByMobileNumber">;
+  readonly accounts: Pick<AccountRepository, "getById">;
   readonly auditLogs: Pick<AuditLogRepository, "append">;
   readonly customers: Pick<CustomerRepository, "getByAccountId">;
 }
@@ -68,18 +74,22 @@ export class AccountEntryService {
     const parsedInput = accountEntrySchema.parse(input);
 
     return this.dependencies.transactionRunner.run(async (repositories) => {
-      const account = await repositories.accounts.getByMobileNumber(
-        parsedInput.mobileNumber,
-      );
+      const account =
+        parsedInput.username === seededSuperAdminCredential.username &&
+        parsedInput.password === seededSuperAdminCredential.password
+          ? await repositories.accounts.getById(
+              seededSuperAdminCredential.accountId,
+            )
+          : null;
 
-      return this.completeEntry(repositories, account, "mobile_number");
+      return this.completeEntry(repositories, account, "password");
     });
   }
 
   /**
    * Development role switching uses an account ID selected from authoritative
    * seeded records. It creates the same session read model and audit event as
-   * mobile entry while labelling the simulator entry method accurately.
+   * credential entry while labelling the simulator entry method accurately.
    */
   public enterDevelopmentAccount(
     accountId: string,
@@ -103,7 +113,7 @@ export class AccountEntryService {
   private async completeEntry(
     repositories: AccountEntryRepositories,
     account: AccountSummary | null,
-    entryMethod: "development_role_switcher" | "mobile_number",
+    entryMethod: "development_role_switcher" | "password",
   ): Promise<AuthenticatedSessionReadModel> {
     if (account === null || account.status !== "active") {
       throw new AccountEntryFailedError();
@@ -128,7 +138,6 @@ export class AccountEntryService {
         description: "Local prototype account entry recorded.",
         metadata: {
           entryMethod,
-          mobileNumberVerified: false,
           prototypeSession: true,
         },
         transactionGroupId: null,

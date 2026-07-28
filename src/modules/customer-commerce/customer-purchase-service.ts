@@ -20,17 +20,13 @@ export interface CustomerPurchaseServiceDependencies {
 function translatePurchaseError(error: PurchaseServiceError): never {
   switch (error.code) {
     case "PURCHASE_INSUFFICIENT_BALANCE":
-      throw new CustomerCommerceError(
-        "CUSTOMER_PURCHASE_INSUFFICIENT_BALANCE",
-      );
+      throw new CustomerCommerceError("CUSTOMER_PURCHASE_INSUFFICIENT_BALANCE");
     case "PURCHASE_DUPLICATE_SUBMISSION":
       throw new CustomerCommerceError("CUSTOMER_PURCHASE_DUPLICATE");
     case "PURCHASE_VENDOR_CLOSED":
       throw new CustomerCommerceError("CUSTOMER_PURCHASE_VENDOR_CLOSED");
     case "PURCHASE_PRODUCT_UNAVAILABLE":
-      throw new CustomerCommerceError(
-        "CUSTOMER_PURCHASE_PRODUCT_UNAVAILABLE",
-      );
+      throw new CustomerCommerceError("CUSTOMER_PURCHASE_PRODUCT_UNAVAILABLE");
     case "PURCHASE_INVALID_COMMAND":
       throw new CustomerCommerceError("CUSTOMER_PURCHASE_INVALID");
     default:
@@ -48,10 +44,7 @@ function assertVerifiedAuthorization(
     });
   }
 
-  if (
-    result.status !== "verified" ||
-    result.accountId !== actorAccountId
-  ) {
+  if (result.status !== "verified" || result.accountId !== actorAccountId) {
     throw new CustomerCommerceError("CUSTOMER_PURCHASE_PIN_FAILED");
   }
 }
@@ -90,11 +83,10 @@ export class CustomerPurchaseService {
       }
 
       authorizationAttempted = true;
-      const result =
-        await this.dependencies.pinVerificationService.verifyPin({
-          actorAccountId: request.actorAccountId,
-          pin,
-        });
+      const result = await this.dependencies.pinVerificationService.verifyPin({
+        actorAccountId: request.actorAccountId,
+        pin,
+      });
       assertVerifiedAuthorization(result, request.actorAccountId);
     };
 

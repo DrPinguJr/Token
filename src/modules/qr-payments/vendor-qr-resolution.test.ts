@@ -80,9 +80,7 @@ describe("VendorQrResolver", () => {
         actorAccountId: activeCustomerAccount.id,
         publicCode: "vnd_9Z9Z9Z9Z",
       }),
-    ).rejects.toEqual(
-      new VendorQrResolutionError("VENDOR_CODE_NOT_FOUND"),
-    );
+    ).rejects.toEqual(new VendorQrResolutionError("VENDOR_CODE_NOT_FOUND"));
   });
 
   it("does not query vendors when customer access is denied", async () => {

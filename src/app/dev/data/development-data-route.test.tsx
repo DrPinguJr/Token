@@ -50,8 +50,8 @@ describe("DevelopmentDataRoute", () => {
       status: "initialized",
       metadata: {
         key: "tokenly-data",
-        schemaVersion: 2,
-        seedVersion: 2,
+        schemaVersion: 5,
+        seedVersion: 5,
         seededAt: "2026-07-27T08:30:00.000Z",
       },
     });
@@ -95,7 +95,7 @@ describe("DevelopmentDataRoute", () => {
       expect(dataRouteMocks.reloadRuntime).toHaveBeenCalledWith();
     });
     expect(await screen.findByRole("status")).toHaveTextContent(
-      "Schema version 2, seed version 2",
+      "Schema version 5, seed version 5",
     );
   });
 
@@ -164,13 +164,13 @@ describe("DevelopmentDataRoute", () => {
 
     finishReload?.();
     expect(
-      await screen.findByText(/schema version 2, seed version 2/i),
+      await screen.findByText(/schema version 5, seed version 5/i),
     ).toBeInTheDocument();
 
     dataRouteMocks.runtime = createRuntime("ready");
     view.rerender(<DevelopmentDataRoute />);
     expect(
-      screen.getByText(/schema version 2, seed version 2/i),
+      screen.getByText(/schema version 5, seed version 5/i),
     ).toBeInTheDocument();
   });
 });

@@ -45,9 +45,13 @@ export function VendorDirectory({ loadVendors }: VendorDirectoryProps) {
 
   useEffect(() => {
     let active = true;
-    setHasLoadError(false);
-    setVendors(null);
 
+    void Promise.resolve().then(() => {
+      if (active) {
+        setHasLoadError(false);
+        setVendors(null);
+      }
+    });
     void loadVendors()
       .then((loadedVendors) => {
         if (active) {

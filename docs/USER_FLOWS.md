@@ -10,17 +10,13 @@
 
 ## Local account entry
 
-1. A person opens `/enter`.
-2. The page discloses that mobile numbers are not verified in this local prototype.
-3. They enter a seeded mobile number.
-4. The account repository resolves the account; failures use a generic message.
+1. An operational user opens `/enter`.
+2. The page explains that tokeners do not sign in here; tokener access is QR-only.
+3. The seeded super-admin signs in with username `AdminLance` and password `Lance888!`.
+4. The account repository resolves the active seeded administrator; failures use a generic message.
 5. The local session stores only the minimum session identifier and preference data.
-6. The app routes by role:
-   - customer: onboarding if incomplete, otherwise `/customer`;
-   - vendor: `/vendor/dashboard`;
-   - staff: `/staff/dashboard`;
-   - administrator: `/admin/dashboard`.
-7. An account-entry audit event is appended without a PIN or secret.
+6. The super-admin is routed to `/admin/dashboard`.
+7. An account-entry audit event is appended without recording the password.
 
 Development mode may expose a role switcher for seeded accounts. Switching creates the same shaped local session and is visibly marked as a simulator.
 
@@ -53,6 +49,22 @@ Requirements:
 6. Staff resolves that code to a customer through a repository; the code contains no balance, PIN, mobile number, or permission.
 
 Empty, loading, IndexedDB error, and no-activity states remain usable.
+
+## One-time claim and private account link
+
+1. An administrator opens `/admin/tokeners`.
+2. They select a customer, such as Lance, and display a one-time claim QR.
+3. The claim QR links to `/claim/[claimCode]`.
+4. Claiming succeeds only once and only before `claimExpiresAt`.
+5. A successful claim marks the local customer record as claimed and reveals the stable private account link `/card/[privateAccessCode]`.
+6. The private account page shows the customer display name, ledger-derived balance, recent activity, and the vendor-facing wallet QR.
+7. The customer can bookmark or save that private account link.
+8. The customer can regenerate the wallet QR from the private account page.
+9. Regeneration changes only the vendor-facing wallet QR `publicCode` and immediately makes older wallet QR payloads fail lookup.
+10. The private account link remains active and is never placed inside the wallet QR payload.
+
+This is a local prototype recovery flow. The private link is bearer access in
+browser-local data, not production authentication.
 
 ## Customer purchase
 

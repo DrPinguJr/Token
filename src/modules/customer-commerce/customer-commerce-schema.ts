@@ -2,10 +2,7 @@ import { z } from "zod";
 
 import { walletPinSchema } from "@/modules/authentication";
 import { walletOperationIdempotencyKeySchema } from "@/modules/transactions";
-import {
-  domainIdSchema,
-  positiveSafeIntegerSchema,
-} from "@/shared/validation";
+import { domainIdSchema, positiveSafeIntegerSchema } from "@/shared/validation";
 
 export const customerBasketItemSchema = z
   .object({

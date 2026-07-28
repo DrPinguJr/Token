@@ -37,7 +37,7 @@ describe("local seed lifecycle", () => {
       status: "initialized",
       metadata: {
         key: "tokenly-data",
-        schemaVersion: 2,
+        schemaVersion: 5,
         seedVersion: TOKENLY_SEED_VERSION,
         seededAt,
       },
@@ -105,7 +105,7 @@ describe("local seed lifecycle", () => {
     ).rejects.toMatchObject({
       code: "LOCAL_DATA_VERSION_UNSUPPORTED",
       storedVersion: 1,
-      supportedVersion: 2,
+      supportedVersion: 5,
     });
 
     const repositories = await createLocalRepositories();

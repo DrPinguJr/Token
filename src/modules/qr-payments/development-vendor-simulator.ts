@@ -10,8 +10,7 @@ import {
   VendorQrResolutionError,
 } from "./vendor-qr-resolution";
 
-export interface DevelopmentVendorSimulatorRepositories
-  extends CustomerQrAccessRepositories {
+export interface DevelopmentVendorSimulatorRepositories extends CustomerQrAccessRepositories {
   readonly vendors: Pick<VendorRepository, "getById" | "list">;
 }
 
@@ -82,8 +81,9 @@ export class DevelopmentVendorSimulator {
       throw new VendorQrResolutionError("VENDOR_CODE_NOT_FOUND");
     }
 
-    const vendor =
-      await this.dependencies.repositories.vendors.getById(vendorId.data);
+    const vendor = await this.dependencies.repositories.vendors.getById(
+      vendorId.data,
+    );
 
     if (vendor === null) {
       throw new VendorQrResolutionError("VENDOR_CODE_NOT_FOUND");

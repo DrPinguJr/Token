@@ -8,12 +8,10 @@ const tokenlyQrPayloadMaximumLength = 200;
 export const tokenlyQrPayloadVersionSchema = z.literal(1);
 export const tokenlyQrEntityKindSchema = z.enum(["customer", "vendor"]);
 
-export const customerQrPublicCodeSchema = publicCodeSchema.regex(
-  /^cus_[A-Za-z0-9_-]+$/,
-);
-export const vendorQrPublicCodeSchema = publicCodeSchema.regex(
-  /^vnd_[A-Za-z0-9_-]+$/,
-);
+export const customerQrPublicCodeSchema =
+  publicCodeSchema.regex(/^cus_[A-Za-z0-9_-]+$/);
+export const vendorQrPublicCodeSchema =
+  publicCodeSchema.regex(/^vnd_[A-Za-z0-9_-]+$/);
 
 const customerQrPayloadInputSchema = z
   .object({
@@ -36,9 +34,7 @@ export const tokenlyQrPayloadSchema = z.discriminatedUnion("kind", [
   vendorQrPayloadInputSchema,
 ]);
 
-export type TokenlyQrPayload = Readonly<
-  z.infer<typeof tokenlyQrPayloadSchema>
->;
+export type TokenlyQrPayload = Readonly<z.infer<typeof tokenlyQrPayloadSchema>>;
 export type TokenlyQrEntityKind = z.infer<typeof tokenlyQrEntityKindSchema>;
 
 export class InvalidTokenlyQrPayloadError extends Error {
@@ -94,8 +90,9 @@ export function parseTokenlyQrPayload(input: unknown): TokenlyQrPayload {
     throw new InvalidTokenlyQrPayloadError();
   }
 
-  const pathMatch =
-    /^\/v(1)\/(customer|vendor)\/([A-Za-z0-9_-]+)$/.exec(url.pathname);
+  const pathMatch = /^\/v(1)\/(customer|vendor)\/([A-Za-z0-9_-]+)$/.exec(
+    url.pathname,
+  );
 
   if (pathMatch === null) {
     throw new InvalidTokenlyQrPayloadError();

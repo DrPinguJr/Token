@@ -42,7 +42,7 @@ export function PublicShell({ children }: PublicShellProps) {
       <footer className="relative z-10 border-t border-ink/5 bg-white/45">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-5 py-6 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
           <p>Tokenly local event prototype</p>
-          <p>Payments and mobile numbers are not verified.</p>
+          <p>Payments and bearer account links are not production-secured.</p>
         </div>
       </footer>
     </div>

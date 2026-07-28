@@ -49,7 +49,7 @@ export function EventHelpScreen({ loadHelp }: EventHelpScreenProps) {
   const help = state.status === "ready" ? state.value : null;
 
   return (
-    <div className="mx-auto w-full max-w-5xl pb-16 pt-8 sm:pt-12">
+    <div className="mx-auto w-full max-w-5xl pt-8 pb-16 sm:pt-12">
       <header className="max-w-3xl">
         <p className="text-sm font-bold tracking-[0.18em] text-brand-blue-strong uppercase">
           Help and support
@@ -58,8 +58,8 @@ export function EventHelpScreen({ loadHelp }: EventHelpScreenProps) {
           Tokenly, without the mystery
         </h1>
         <p className="mt-4 text-lg leading-8 text-ink-muted">
-          This build is a complete local prototype for an event token wallet.
-          It is not connected to banks, PayNow, SMS, or production services.
+          This build is a complete local prototype for an event token wallet. It
+          is not connected to banks, PayNow, SMS, or production services.
         </p>
       </header>
 
@@ -205,8 +205,8 @@ export function EventHelpScreen({ loadHelp }: EventHelpScreenProps) {
                   Fictional test accounts
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-ink-muted">
-                  These credentials work only with the deterministic local
-                  seed. The development wallet PIN is{" "}
+                  These credentials work only with the deterministic local seed.
+                  The development wallet PIN is{" "}
                   <strong className="font-mono text-ink">
                     {help.developmentAccess.pin}
                   </strong>

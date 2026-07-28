@@ -2,10 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { EventSettings } from "@/modules/event-settings";
 
-import {
-  EventHelpQuery,
-  type DevelopmentHelpAccess,
-} from "./event-help-query";
+import { EventHelpQuery, type DevelopmentHelpAccess } from "./event-help-query";
 
 const settings: EventSettings = Object.freeze({
   id: "event-settings-main",

@@ -25,6 +25,7 @@ export const accountSchema = z
   .object({
     id: domainIdSchema,
     mobileNumber: normalizedMobileNumberSchema,
+    username: nonBlankTextSchema.max(64).optional(),
     displayName: nonBlankTextSchema.max(100),
     role: accountRoleSchema,
     status: accountStatusSchema,
