@@ -4,6 +4,7 @@ import { House, ListChecks, LogOut, QrCode } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
+import { clearPrototypeSession } from "@/config/remote-customer-access-client";
 import { useTokenlyRuntime } from "@/config/tokenly-runtime-provider";
 import { decideRoleAccess } from "@/modules/authentication";
 import { DashboardShell } from "@/shared/components/dashboard-shell";
@@ -63,6 +64,7 @@ export default function AdminLayout({
 
   function signOut(): void {
     runtime.signOut();
+    void clearPrototypeSession();
     router.replace("/enter");
   }
 

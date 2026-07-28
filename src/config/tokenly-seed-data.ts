@@ -188,6 +188,7 @@ export function createTokenlySeedData(): TokenlySeedData {
     {
       id: "account-vendor-001",
       mobileNumber: seededDevelopmentAccounts.vendor,
+      username: "Vendor1",
       displayName: "Courtside Kitchen Team",
       role: "vendor",
       status: "active",

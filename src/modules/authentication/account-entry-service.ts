@@ -15,11 +15,18 @@ import {
 export const ACCOUNT_ENTRY_FAILURE_MESSAGE =
   "We could not enter that account. Check the username and password and try again.";
 
-const seededSuperAdminCredential = Object.freeze({
-  accountId: "account-admin-001",
-  username: "AdminLance",
-  password: "Lance888!",
-});
+const seededOperationalCredentials = Object.freeze([
+  {
+    accountId: "account-admin-001",
+    username: "AdminLance",
+    password: "Lance888!",
+  },
+  {
+    accountId: "account-vendor-001",
+    username: "Vendor1",
+    password: "Vendor1",
+  },
+]);
 
 export class AccountEntryFailedError extends Error {
   public readonly code = "ACCOUNT_ENTRY_FAILED";
@@ -74,13 +81,16 @@ export class AccountEntryService {
     const parsedInput = accountEntrySchema.parse(input);
 
     return this.dependencies.transactionRunner.run(async (repositories) => {
+      const credential =
+        seededOperationalCredentials.find(
+          (candidate) =>
+            candidate.username === parsedInput.username &&
+            candidate.password === parsedInput.password,
+        ) ?? null;
       const account =
-        parsedInput.username === seededSuperAdminCredential.username &&
-        parsedInput.password === seededSuperAdminCredential.password
-          ? await repositories.accounts.getById(
-              seededSuperAdminCredential.accountId,
-            )
-          : null;
+        credential === null
+          ? null
+          : await repositories.accounts.getById(credential.accountId);
 
       return this.completeEntry(repositories, account, "password");
     });

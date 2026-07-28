@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 
+import { establishPrototypeSession } from "@/config/remote-customer-access-client";
 import { useTokenlyRuntime } from "@/config/tokenly-runtime-provider";
 import {
   AccountEntryScreen,
@@ -23,6 +24,12 @@ export function EnterPageClient() {
   const enterAccount = useCallback(
     async (input: AccountEntryInput): Promise<void> => {
       const session = await runtimeEnterAccount(input);
+      if (
+        session.account.role === "administrator" ||
+        session.account.role === "vendor"
+      ) {
+        await establishPrototypeSession(input);
+      }
       router.replace(session.destination);
     },
     [router, runtimeEnterAccount],

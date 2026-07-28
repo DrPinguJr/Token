@@ -2,14 +2,32 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { QrCode, RefreshCw, Search, WalletCards } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  BadgePlus,
+  MinusCircle,
+  PlusCircle,
+  QrCode,
+  RefreshCw,
+  Search,
+  WalletCards,
+} from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { generateRouteQrCodeDataUrl } from "@/config/qr-code-image-generator";
 
 import type { AdminTokenerAccessSummary } from "../customer-access-read-model";
 
 export interface AdminTokenersScreenProps {
+  readonly adjustTokenerTokens?: (input: {
+    readonly customerId: string;
+    readonly direction: "credit" | "debit";
+    readonly reason: string;
+    readonly tokenAmount: number;
+  }) => Promise<void>;
+  readonly createTokener?: (input: {
+    readonly displayName: string;
+    readonly nric: string;
+  }) => Promise<void>;
   readonly loadTokeners: () => Promise<readonly AdminTokenerAccessSummary[]>;
   readonly refreshClaimQr?: (customerId: string) => Promise<void>;
   readonly selectedCustomerId?: string;
@@ -28,14 +46,25 @@ function formatClaimState(tokener: AdminTokenerAccessSummary): string {
 }
 
 function ClaimQrPanel({
+  adjustTokenerTokens,
   selectedTokener,
   onRefreshClaimQr,
+  onReload,
 }: Readonly<{
+  adjustTokenerTokens?: AdminTokenersScreenProps["adjustTokenerTokens"];
   selectedTokener: AdminTokenerAccessSummary | null;
   onRefreshClaimQr?: (customerId: string) => Promise<void>;
+  onReload: () => void;
 }>) {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [adjustDirection, setAdjustDirection] = useState<"credit" | "debit">(
+    "credit",
+  );
+  const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjustReason, setAdjustReason] = useState("");
+  const [isAdjusting, setIsAdjusting] = useState(false);
+  const [adjustMessage, setAdjustMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -89,6 +118,49 @@ function ClaimQrPanel({
       await onRefreshClaimQr(tokener.customerId);
     } finally {
       setIsRefreshing(false);
+    }
+  }
+
+  async function submitAdjustment(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault();
+
+    if (adjustTokenerTokens === undefined) {
+      return;
+    }
+
+    const tokener = selectedTokener;
+    if (tokener === null) {
+      return;
+    }
+
+    const tokenAmount = Number(adjustAmount);
+    if (!Number.isSafeInteger(tokenAmount) || tokenAmount <= 0) {
+      setAdjustMessage("Enter a positive whole-token amount.");
+      return;
+    }
+
+    setAdjustMessage(null);
+    setIsAdjusting(true);
+
+    try {
+      await adjustTokenerTokens({
+        customerId: tokener.customerId,
+        direction: adjustDirection,
+        reason: adjustReason,
+        tokenAmount,
+      });
+      setAdjustAmount("");
+      setAdjustReason("");
+      setAdjustMessage("Token adjustment saved.");
+      onReload();
+    } catch {
+      setAdjustMessage(
+        "Token adjustment could not be saved. Check the amount and reason.",
+      );
+    } finally {
+      setIsAdjusting(false);
     }
   }
 
@@ -156,11 +228,81 @@ function ClaimQrPanel({
           {isRefreshing ? "Refreshing..." : "Refresh 15-minute claim QR"}
         </button>
       )}
+
+      {adjustTokenerTokens !== undefined && (
+        <form
+          className="mt-6 rounded-3xl bg-canvas-soft p-4"
+          onSubmit={(event) => void submitAdjustment(event)}
+        >
+          <h3 className="font-bold text-ink">Add or remove tokens</h3>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setAdjustDirection("credit")}
+              className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-bold ${
+                adjustDirection === "credit"
+                  ? "bg-brand-mint-strong text-white"
+                  : "bg-white text-ink"
+              }`}
+            >
+              <PlusCircle aria-hidden="true" className="size-4" />
+              Add
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdjustDirection("debit")}
+              className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-bold ${
+                adjustDirection === "debit"
+                  ? "bg-danger text-white"
+                  : "bg-white text-ink"
+              }`}
+            >
+              <MinusCircle aria-hidden="true" className="size-4" />
+              Remove
+            </button>
+          </div>
+          <label className="mt-4 block">
+            <span className="text-sm font-semibold text-ink">Tokens</span>
+            <input
+              inputMode="numeric"
+              value={adjustAmount}
+              onChange={(event) => setAdjustAmount(event.target.value)}
+              className="mt-2 min-h-12 w-full rounded-2xl bg-white px-4 py-3 text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            />
+          </label>
+          <label className="mt-3 block">
+            <span className="text-sm font-semibold text-ink">Reason</span>
+            <input
+              value={adjustReason}
+              onChange={(event) => setAdjustReason(event.target.value)}
+              placeholder="Manual event desk correction"
+              className="mt-2 min-h-12 w-full rounded-2xl bg-white px-4 py-3 text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={isAdjusting}
+            className="mt-4 min-h-12 w-full rounded-full bg-ink px-5 py-3 font-semibold text-white disabled:cursor-wait disabled:bg-ink-muted"
+          >
+            {isAdjusting ? "Saving..." : "Save token adjustment"}
+          </button>
+          {adjustMessage !== null && (
+            <p
+              role="status"
+              className="mt-3 text-sm font-medium text-ink-muted"
+            >
+              {adjustMessage}
+            </p>
+          )}
+        </form>
+      )}
     </aside>
   );
 }
 
 export function AdminTokenersScreen({
+  adjustTokenerTokens,
+  createTokener,
   loadTokeners,
   refreshClaimQr,
   selectedCustomerId,
@@ -174,6 +316,10 @@ export function AdminTokenersScreen({
     selectedCustomerId ?? null,
   );
   const [reloadVersion, setReloadVersion] = useState(0);
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [newNric, setNewNric] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createMessage, setCreateMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -253,6 +399,33 @@ export function AdminTokenersScreen({
     setReloadVersion((current) => current + 1);
   }
 
+  async function submitNewTokener(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault();
+
+    if (createTokener === undefined) {
+      return;
+    }
+
+    setCreateMessage(null);
+    setIsCreating(true);
+
+    try {
+      await createTokener({ displayName: newDisplayName, nric: newNric });
+      setNewDisplayName("");
+      setNewNric("");
+      setCreateMessage("Tokener created. Select them to show the claim QR.");
+      setReloadVersion((current) => current + 1);
+    } catch {
+      setCreateMessage(
+        "Tokener could not be created. Check the name and NRIC.",
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-7">
       <section aria-labelledby="tokeners-heading">
@@ -291,6 +464,61 @@ export function AdminTokenersScreen({
             </span>
           </label>
         </div>
+
+        {createTokener !== undefined && (
+          <form
+            className="mt-6 rounded-card bg-white p-5 shadow-soft"
+            onSubmit={(event) => void submitNewTokener(event)}
+          >
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 place-items-center rounded-2xl bg-brand-blue-soft text-brand-blue-strong">
+                <BadgePlus aria-hidden="true" className="size-5" />
+              </span>
+              <div>
+                <h2 className="text-lg font-bold text-ink">Add tokener</h2>
+                <p className="mt-1 text-sm leading-6 text-ink-muted">
+                  Create a QR-only account with a fresh one-time claim code.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label>
+                <span className="text-sm font-semibold text-ink">Name</span>
+                <input
+                  value={newDisplayName}
+                  onChange={(event) => setNewDisplayName(event.target.value)}
+                  placeholder="Lance Tan"
+                  className="mt-2 min-h-12 w-full rounded-2xl bg-canvas px-4 py-3 text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                />
+              </label>
+              <label>
+                <span className="text-sm font-semibold text-ink">NRIC</span>
+                <input
+                  value={newNric}
+                  onChange={(event) => setNewNric(event.target.value)}
+                  placeholder="S1234567A"
+                  autoCapitalize="characters"
+                  className="mt-2 min-h-12 w-full rounded-2xl bg-canvas px-4 py-3 font-mono text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                />
+              </label>
+            </div>
+            <button
+              type="submit"
+              disabled={isCreating}
+              className="mt-4 min-h-12 rounded-full bg-ink px-5 py-3 font-semibold text-white shadow-raised disabled:cursor-wait disabled:bg-ink-muted"
+            >
+              {isCreating ? "Creating..." : "Create tokener"}
+            </button>
+            {createMessage !== null && (
+              <p
+                role="status"
+                className="mt-3 text-sm font-medium text-ink-muted"
+              >
+                {createMessage}
+              </p>
+            )}
+          </form>
+        )}
 
         <ul className="mt-6 grid gap-4">
           {visibleTokeners.map((tokener) => (
@@ -338,8 +566,10 @@ export function AdminTokenersScreen({
 
       <div className="mt-7 lg:mt-0">
         <ClaimQrPanel
+          adjustTokenerTokens={adjustTokenerTokens}
           selectedTokener={selectedTokener}
           onRefreshClaimQr={refreshSelectedClaimQr}
+          onReload={() => setReloadVersion((current) => current + 1)}
         />
         {selectedTokener !== null && (
           <Link

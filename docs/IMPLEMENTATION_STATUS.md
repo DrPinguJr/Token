@@ -7,7 +7,7 @@ Last updated: 2026-07-29
 - **Current phase:** Phase 5 — Customer application
 - **Overall status:** in progress
 - **Current target:** complete local prototype
-- **Infrastructure status:** Supabase schema migration applied; Supabase-backed runtime adapters, Vercel, GitHub publishing, and external integrations are deferred
+- **Infrastructure status:** Supabase schema and a deployment-prototype QR/admin API path are applied; full Supabase-backed runtime adapters, Vercel project automation, GitHub publishing, and external integrations are deferred
 
 This document records observed implementation, not intended scope. An item is complete only after its files exist and the relevant behaviour or command has been verified.
 
@@ -165,6 +165,16 @@ IndexedDB repositories for product flows; remote database use in the UI requires
 reviewed RLS policies, server-side transaction functions, and repository
 adapters before any production claim.
 
+The deployed QR distribution path now has a Supabase-backed prototype API for
+admin tokener listing/creation, one-time claim QR refresh, private account page
+loading, wallet QR regeneration, administrative token adjustments, and vendor
+customer-wallet QR resolution. Tokeners still do not sign in; `/claim/[code]`
+and `/card/[privateAccessCode]` use shared Supabase data so phone scans work
+across devices. Admin and vendor API writes are gated by a signed prototype
+cookie established by the local `AdminLance` and `Vendor1` password entry flow.
+This is still prototype authentication, not Supabase Auth or production-grade
+authorization.
+
 ## Validation record
 
 | Command/check                            | Result              | Notes                                                                                                                                                                                                                                                |
@@ -247,6 +257,13 @@ adapters before any production claim.
 | `npm run typecheck`                      | Passed, 2026-07-29  | Repository-wide `tsc --noEmit` completed after adding the Supabase server health route                                                                                                                                                               |
 | `npm run test`                           | Passed, 2026-07-29  | Repository-wide Vitest suite passed: 60 test files and 318 tests                                                                                                                                                                                     |
 | `npm run build`                          | Passed, 2026-07-29  | Next.js 16.2.12 production build completed with `/api/supabase/health` as a dynamic server route                                                                                                                                                     |
+| Supabase NRIC migration                  | Passed, 2026-07-29  | `npx supabase db push --password ...` applied `20260729101000_add_customer_nric.sql`; Docker-only migration catalog cache warning did not block the remote push                                                                                      |
+| Supabase deployment API smoke            | Passed, 2026-07-29  | Prototype login cookie returned HTTP 200; authenticated admin tokeners API returned Lance Tan from Supabase; authenticated vendor customer-wallet resolver returned Lance Tan and balance 0                                                          |
+| `npm run format:check`                   | Passed, 2026-07-29  | Repository-wide Prettier check completed after the Supabase deployment-prototype QR/admin changes                                                                                                                                                    |
+| `npm run lint`                           | Passed, 2026-07-29  | Repository-wide ESLint completed after the Supabase deployment-prototype QR/admin changes                                                                                                                                                            |
+| `npm run typecheck`                      | Passed, 2026-07-29  | Repository-wide `tsc --noEmit` completed after the Supabase deployment-prototype QR/admin changes                                                                                                                                                    |
+| `npm run test`                           | Passed, 2026-07-29  | Repository-wide Vitest suite passed: 60 test files and 318 tests                                                                                                                                                                                     |
+| `npm run build`                          | Passed, 2026-07-29  | Next.js 16.2.12 production build completed with admin, customer-access, prototype-auth, and vendor dynamic API routes                                                                                                                                |
 
 Replace “Not run/recorded” with the date, command, outcome, and concise failure limitation when a check is actually executed.
 
@@ -259,8 +276,9 @@ Replace “Not run/recorded” with the date, command, outcome, and concise fail
   reset/reseed before they can be opened under the version `5` local numeric
   private-link, admin credential, and customer-access semantics.
 - Phase 2 IndexedDB integration tests use fake IndexedDB with a Blob-compatible Node shim; real-browser persistence and refresh behaviour remain an end-to-end validation responsibility.
-- Supabase currently has the schema only; the user-facing app flows still use IndexedDB until server-side Supabase adapters, RLS, and transaction functions are implemented.
-- Production deployment remains deferred until the Supabase-backed runtime path and Vercel environment configuration are completed.
+- Supabase currently supports the deployed tokener QR/admin prototype path; broader product flows still use IndexedDB until repository adapters, reviewed RLS, and server-side transaction functions are implemented.
+- The deployed admin/vendor password flow uses a signed prototype cookie, not Supabase Auth, MFA, production password hashing, or durable account recovery.
+- Production deployment remains deferred until the full Supabase-backed runtime path, RLS policies, and Vercel environment configuration are completed and reviewed.
 
 ## Next work
 

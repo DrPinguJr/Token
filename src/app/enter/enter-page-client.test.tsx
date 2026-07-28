@@ -6,6 +6,7 @@ import type { TokenlyRuntimeValue } from "@/config/tokenly-runtime-provider";
 import type { AuthenticatedSessionReadModel } from "@/modules/authentication";
 
 const enterPageMocks = vi.hoisted(() => ({
+  establishPrototypeSession: vi.fn(async () => undefined),
   replace: vi.fn(),
   runtime: null as unknown,
 }));
@@ -18,6 +19,10 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/config/tokenly-runtime-provider", () => ({
   useTokenlyRuntime: () => enterPageMocks.runtime as TokenlyRuntimeValue,
+}));
+
+vi.mock("@/config/remote-customer-access-client", () => ({
+  establishPrototypeSession: enterPageMocks.establishPrototypeSession,
 }));
 
 import { EnterPageClient } from "./enter-page-client";
@@ -81,6 +86,10 @@ describe("EnterPageClient", () => {
 
     await waitFor(() => {
       expect(enterAccount).toHaveBeenCalledWith({
+        username: "AdminLance",
+        password: "Lance888!",
+      });
+      expect(enterPageMocks.establishPrototypeSession).toHaveBeenCalledWith({
         username: "AdminLance",
         password: "Lance888!",
       });

@@ -1,23 +1,35 @@
 # Supabase Integration
 
-Supabase is **not used by the current application runtime**. The app still
-persists through browser IndexedDB repositories, and no route or service should
-be described as Supabase-backed until repository adapters and server-side
-transaction functions are implemented.
+Supabase is used by the current deployed tokener QR prototype path. Admin
+tokener creation/listing, one-time claim QR refresh, private account page
+loading, wallet QR regeneration, administrative token adjustments, and vendor
+customer-wallet QR resolution read/write the hosted database through server API
+routes.
+
+Most product flows still persist through browser IndexedDB repositories. Do not
+describe the wider application runtime as fully Supabase-backed until
+repository adapters, row-level security, and server-side transaction functions
+are implemented.
 
 This directory now contains:
 
 - `config.toml`: Supabase CLI project configuration.
 - `migrations/20260728154615_initial_tokenly_schema.sql`: an executable first
   relational schema migration for the current Tokenly data model.
+- `migrations/20260729101000_add_customer_nric.sql`: adds the admin-entered
+  customer NRIC/FIN field used by the deployed tokener creation prototype.
 - `planned-schema.sql`: older non-executable planning material retained for
   design context.
 
-The migration has **not** been pushed to a hosted Supabase project from this
-workspace. Pushing requires linking the project with the Supabase CLI and a
-database migration credential such as `SUPABASE_ACCESS_TOKEN` plus database
-password, or a direct database URL. Publishable, anon, secret, and service-role
-API keys are not a substitute for a database migration credential.
+Both migrations have been pushed to the hosted Supabase project linked from this
+workspace. Future migration pushes still require a database migration
+credential such as `SUPABASE_ACCESS_TOKEN` plus database password, or a direct
+database URL. Publishable, anon, secret, and service-role API keys are not a
+substitute for a database migration credential.
+
+The current deployed admin/vendor password flow uses a signed prototype cookie
+from the Next.js server. It is a temporary bridge for the QR prototype, not
+Supabase Auth or production-grade authorization.
 
 ## Replacement boundary
 
