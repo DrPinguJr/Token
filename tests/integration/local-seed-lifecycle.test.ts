@@ -2,7 +2,6 @@ import "fake-indexeddb/auto";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { createDevelopmentDataFacade } from "@/config/development-data-facade";
 import { resetLocalData } from "@/config/local-data";
 import {
   createLocalRepositories,
@@ -54,7 +53,7 @@ describe("local seed lifecycle", () => {
     await repositories.close();
   });
 
-  it("replaces changed local data when development reseed is enabled", async () => {
+  it("replaces changed data through the isolated test reset lifecycle", async () => {
     await initializeTokenlyApplicationData({ now: () => seededAt });
     const repositories = await createLocalRepositories();
     const account = await repositories.accounts.getById("account-customer-001");
@@ -71,14 +70,10 @@ describe("local seed lifecycle", () => {
     });
     await repositories.close();
 
-    const facade = createDevelopmentDataFacade({
-      isEnabled: () => true,
-      resetData: resetLocalData,
-      initializeData: () =>
-        initializeTokenlyApplicationData({ now: () => seededAt }),
+    await resetLocalData();
+    const result = await initializeTokenlyApplicationData({
+      now: () => seededAt,
     });
-
-    const result = await facade.reseed();
     const reseededRepositories = await createLocalRepositories();
     const reseededAccount = await reseededRepositories.accounts.getById(
       "account-customer-001",

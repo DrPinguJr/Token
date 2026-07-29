@@ -57,7 +57,8 @@ Definitions:
 - Simulated lockout after repeated failures with generic failure messages.
 - Tokeners do not use username, password, mobile-number, or PIN sign-in.
 - Tokeners receive a one-time claim QR and then save a private account link.
-- A development-only role switcher and data reset/reseed controls, enabled only by environment configuration.
+- A development-only role switcher, enabled only by environment configuration.
+- No browser route exposes destructive local-data reset or reseed controls.
 - Clear disclosure that local operational credentials are prototype-only.
 
 There is no SMS OTP, real mobile-number ownership verification, Supabase Auth, or production identity recovery.

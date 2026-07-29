@@ -165,8 +165,9 @@ Development routes and controls require `NEXT_PUBLIC_TOKENLY_ENABLE_DEV_TOOLS=tr
 
 - Hidden navigation alone is insufficient; route and action entry points must check the flag.
 - Pages must display a persistent development/simulator label.
-- Reset targets only the exact Tokenly database.
 - Seed selection must use fictional records.
+- No browser route or control may expose destructive local-data reset/reseed
+  commands.
 - Production builds should not enable the flag.
 
 Because a `NEXT_PUBLIC_` value is visible to the browser, it is an availability switch, not a security control. Production deployment must remove/disable the tools and enforce privileged operations on a server.

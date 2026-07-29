@@ -82,7 +82,7 @@ describe("EnterPageClient", () => {
       "AdminLance",
     );
     await user.type(screen.getByLabelText(/password/i), "Lance888!");
-    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByRole("button", { name: "Log in" }));
 
     await waitFor(() => {
       expect(enterAccount).toHaveBeenCalledWith({

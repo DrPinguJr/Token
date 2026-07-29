@@ -891,6 +891,8 @@ export async function createSupabaseCreditIssuance(
 ): Promise<SupabaseTokenerSummary> {
   const parsed = supabaseCreditIssuanceSchema.parse(input);
   const supportedEvidenceTypes = new Set([
+    "image/heic",
+    "image/heif",
     "image/jpeg",
     "image/png",
     "image/webp",
@@ -899,11 +901,11 @@ export async function createSupabaseCreditIssuance(
   if (
     !supportedEvidenceTypes.has(input.evidence.type) ||
     input.evidence.size <= 0 ||
-    input.evidence.size > 5 * 1024 * 1024
+    input.evidence.size > 10 * 1024 * 1024
   ) {
     throw new SupabaseTokenlyAccessError(
       "INVALID_INPUT",
-      "Use a JPEG, PNG, or WebP evidence image up to 5 MB.",
+      "Use a HEIC, HEIF, JPEG, PNG, or WebP evidence image up to 10 MB.",
     );
   }
 

@@ -3,8 +3,8 @@ values (
   'payment-evidence',
   'payment-evidence',
   false,
-  5242880,
-  array['image/jpeg', 'image/png', 'image/webp']
+  10485760,
+  array['image/heic', 'image/heif', 'image/jpeg', 'image/png', 'image/webp']
 )
 on conflict (id) do update
 set
@@ -48,11 +48,17 @@ begin
     raise exception 'Unsupported payment method';
   end if;
 
-  if p_evidence_size_bytes <= 0 or p_evidence_size_bytes > 5242880 then
+  if p_evidence_size_bytes <= 0 or p_evidence_size_bytes > 10485760 then
     raise exception 'Evidence size is invalid';
   end if;
 
-  if p_evidence_mime_type not in ('image/jpeg', 'image/png', 'image/webp') then
+  if p_evidence_mime_type not in (
+    'image/heic',
+    'image/heif',
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ) then
     raise exception 'Evidence type is invalid';
   end if;
 

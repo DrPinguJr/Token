@@ -11,12 +11,18 @@
 ## Local account entry
 
 1. An operational user opens `/enter`.
-2. The page explains that tokeners do not sign in here; tokener access is QR-only.
+2. The two-panel page presents the Tokenly × Big Blue Floorball identity on the
+   left and a minimal operational login on the right.
 3. The seeded super-admin signs in with username `AdminLance` and password `Lance888!`.
 4. The account repository resolves the active seeded administrator; failures use a generic message.
 5. The local session stores only the minimum session identifier and preference data.
 6. The super-admin is routed to `/admin/dashboard`.
 7. An account-entry audit event is appended without recording the password.
+8. A tokener can open **QR mode** below the login and scan a same-origin
+   one-time claim QR or private account QR.
+9. QR mode rejects public vendor-payment wallet QRs and external URLs. If a
+   private link is lost, an administrator refreshes the claim QR in
+   `/admin/tokeners` and the tokener scans that refreshed QR.
 
 Development mode may expose a role switcher for seeded accounts. Switching creates the same shaped local session and is visibly marked as a simulator.
 
@@ -165,8 +171,9 @@ Duplicate idempotency, over-refund, invalid amount, insufficient vendor balance,
 1. An administrator opens a customer profile from `/admin/tokeners`.
 2. They choose **Add credits**, which opens a two-step modal.
 3. Step 1 provides separate **Take photo** and **Upload image** controls for a
-   JPEG, PNG, or WebP image of the PayNow confirmation or cash received and
-   records the manual payment method. The image is limited to 5 MB.
+   HEIC, HEIF, JPEG, PNG, or WebP image of the PayNow confirmation or cash
+   received and records the manual payment method. The image is limited to 10
+   MB, and a valid selection advances directly to the amount step.
 4. The screen states that the image is manual evidence and does not mean
    Tokenly verified the payment.
 5. Step 2 requires a positive Singapore-dollar amount.
@@ -220,13 +227,9 @@ state rather than failing or implying local IndexedDB data.
 6. With development tools enabled, the simulator can choose a seeded customer or vendor.
 7. Every path resolves an opaque code through the same validated lookup.
 
-## Development data reset and reseed
+## Development data safety
 
-1. An enabled development user opens `/dev/data`.
-2. The UI warns that local prototype data in the Tokenly IndexedDB database will be replaced.
-3. Confirmation closes active database connections and resets only the application’s known stores.
-4. Reseed writes the current data version and deterministic fictional records.
-5. Session/onboarding preferences are cleared only when explicitly included by the reset command.
-6. The page reports success or exact recoverable failure.
-
-This control is unavailable when the development environment flag is not explicitly enabled.
+No browser route exposes destructive reset or reseed controls. Deterministic
+reset helpers are limited to isolated automated-test databases. A developer
+recovering a broken local prototype must deliberately clear only Tokenly's site
+data through browser settings.

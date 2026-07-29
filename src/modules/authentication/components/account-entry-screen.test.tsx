@@ -33,15 +33,20 @@ function renderReadyScreen(
 }
 
 describe("AccountEntryScreen", () => {
-  it("discloses QR-only tokener access and requests operational credentials", () => {
+  it("renders the clean partnership and login panels", () => {
     renderReadyScreen();
 
-    expect(screen.getByText(/tokener access is qr-only/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/one-time claim qr/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("link", {
+        name: /Tokenly × Big Blue Floorball/i,
+      }),
+    ).toHaveAttribute("href", "https://www.bigbluesports.com.sg/");
+    expect(screen.getByRole("heading", { name: "Log in" })).toBeVisible();
     expect(screen.getByRole("textbox", { name: /username/i })).toHaveAttribute(
       "type",
       "text",
     );
+    expect(screen.queryByText(/prototype only/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toHaveAttribute(
       "type",
       "password",
@@ -58,7 +63,7 @@ describe("AccountEntryScreen", () => {
       "AdminLance",
     );
     await user.type(screen.getByLabelText(/password/i), "Lance888!");
-    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByRole("button", { name: "Log in" }));
 
     await waitFor(() => {
       expect(onEnter).toHaveBeenCalledWith({
@@ -78,7 +83,7 @@ describe("AccountEntryScreen", () => {
       "90000001",
     );
     await user.type(screen.getByLabelText(/password/i), "Lance888!");
-    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByText("Enter a valid username.")).toBeVisible();
     expect(onEnter).not.toHaveBeenCalled();
@@ -96,7 +101,7 @@ describe("AccountEntryScreen", () => {
       "AdminLance",
     );
     await user.type(screen.getByLabelText(/password/i), "wrong-password");
-    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByRole("button", { name: "Log in" }));
 
     expect(
       await screen.findByText(ACCOUNT_ENTRY_FAILURE_MESSAGE),
@@ -116,14 +121,12 @@ describe("AccountEntryScreen", () => {
       "AdminLance",
     );
     await user.type(screen.getByLabelText(/password/i), "Lance888!");
-    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByRole("button", { name: "Log in" }));
 
     expect(
       await screen.findByText(ACCOUNT_ENTRY_RECOVERY_MESSAGE),
     ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Reopen local data" }),
-    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
     expect(
       screen.queryByText(/secret-internal-record/i),
     ).not.toBeInTheDocument();
@@ -143,7 +146,7 @@ describe("AccountEntryScreen", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /local data did not open/i,
+      /local data is unavailable/i,
     );
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledOnce();

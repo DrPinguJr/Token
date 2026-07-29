@@ -50,9 +50,6 @@ describe("AdminAddCreditsDialog", () => {
 
     await user.click(screen.getByText("Cash"));
     await user.upload(screen.getByLabelText("Upload evidence image"), evidence);
-    await user.click(
-      screen.getByRole("button", { name: "Next: enter amount" }),
-    );
 
     expect(
       screen.getByRole("heading", { name: "Enter amount received" }),
@@ -94,7 +91,7 @@ describe("AdminAddCreditsDialog", () => {
     });
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /use a JPEG, PNG, or WebP image/i,
+      /use a HEIC, HEIF, JPEG, PNG, or WebP image/i,
     );
   });
 
@@ -118,5 +115,28 @@ describe("AdminAddCreditsDialog", () => {
     expect(screen.getByLabelText("Upload evidence image")).not.toHaveAttribute(
       "capture",
     );
+  });
+
+  it("accepts an iPhone HEIC photo and advances automatically", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <AdminAddCreditsDialog
+        customerId="customer-1"
+        customerName="Lance Tan"
+        onClose={vi.fn()}
+        onComplete={vi.fn()}
+        submitCredits={vi.fn()}
+      />,
+    );
+
+    await user.upload(
+      screen.getByLabelText("Upload evidence image"),
+      new File(["heic-image"], "IMG_1001.HEIC", { type: "image/heic" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Enter amount received" }),
+    ).toBeVisible();
   });
 });

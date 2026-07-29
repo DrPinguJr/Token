@@ -1,6 +1,6 @@
 "use client";
 
-import { Database, UserRoundCog } from "lucide-react";
+import { UserRoundCog } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,11 +9,6 @@ const navigationItems = [
     href: "/dev/role-switcher",
     label: "Role switcher",
     icon: UserRoundCog,
-  },
-  {
-    href: "/dev/data",
-    label: "Local data",
-    icon: Database,
   },
 ] as const;
 

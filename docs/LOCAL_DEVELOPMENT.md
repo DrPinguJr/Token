@@ -73,7 +73,10 @@ The intended core seed accounts are:
 production default. Seed records persist only its documented prototype digest
 format, not the literal digits.
 
-The account entry screen is for local operational users. The seeded super-admin signs in with username `AdminLance` and password `Lance888!`. Tokeners do not sign in there; they use the one-time claim QR and saved private account link.
+The account entry screen is for operational users. The seeded super-admin signs
+in with username `AdminLance` and password `Lance888!`. Tokeners use **QR mode**
+on the same page to scan a one-time claim QR or return through their saved
+private account QR. Public vendor-payment wallet QRs are intentionally rejected.
 
 ## Local data
 
@@ -85,13 +88,12 @@ The account entry screen is for local operational users. The seeded super-admin 
 With development tools enabled:
 
 - `/dev/role-switcher` switches among seeded accounts.
-- `/dev/data` resets and reseeds deterministic application data.
 - the scanner UI can select a seeded customer or vendor.
 
-Reset/reseed targets only the exact Tokenly database and discards its local
-prototype records. Session and onboarding preferences are preserved unless a
-caller explicitly includes them through the separately scoped preference-reset
-hook. It does not affect unrelated browser data.
+No application route exposes reset or reseed commands. Automated tests retain
+isolated reset helpers for their dedicated databases. If a developer must
+discard a broken local prototype database, clear only this site's browser data
+through browser settings, then reload to run deterministic first-use seeding.
 
 If seed contracts change, bump the seed version and provide an explicit reseed path. Do not silently overwrite a user’s local prototype data during a normal schema upgrade.
 
@@ -152,7 +154,8 @@ Use a normal browser context (not a heavily restricted/private policy context), 
 
 ### Seed data appears outdated
 
-Enable development tools, open `/dev/data`, and use the confirmed reseed action. Do not delete broad browser profile directories.
+Clear only Tokenly's site data through browser settings and reload. Do not
+delete broad browser profile directories.
 
 ### Playwright browser is missing
 

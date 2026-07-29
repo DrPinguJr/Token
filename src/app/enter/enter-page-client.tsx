@@ -10,6 +10,8 @@ import {
   type AccountEntryInput,
 } from "@/modules/authentication";
 
+import { EnterQrMode } from "./enter-qr-mode";
+
 export function EnterPageClient() {
   const router = useRouter();
   const runtime = useTokenlyRuntime();
@@ -41,6 +43,7 @@ export function EnterPageClient() {
       runtimeErrorMessage={runtime.errorMessage}
       onEnter={enterAccount}
       onRetry={runtime.reloadRuntime}
+      qrMode={<EnterQrMode />}
     />
   );
 }

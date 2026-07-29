@@ -16,8 +16,10 @@ import {
   type FormEvent,
 } from "react";
 
-const maximumEvidenceBytes = 5 * 1024 * 1024;
+const maximumEvidenceBytes = 10 * 1024 * 1024;
 const acceptedEvidenceTypes = new Set([
+  "image/heic",
+  "image/heif",
   "image/jpeg",
   "image/png",
   "image/webp",
@@ -101,7 +103,7 @@ export function AdminAddCreditsDialog({
     if (!acceptedEvidenceTypes.has(selectedFile.type)) {
       setEvidence(null);
       setEvidencePreview(null);
-      setMessage("Use a JPEG, PNG, or WebP image.");
+      setMessage("Use a HEIC, HEIF, JPEG, PNG, or WebP image.");
       event.target.value = "";
       return;
     }
@@ -109,7 +111,7 @@ export function AdminAddCreditsDialog({
     if (selectedFile.size > maximumEvidenceBytes) {
       setEvidence(null);
       setEvidencePreview(null);
-      setMessage("The evidence image must be 5 MB or smaller.");
+      setMessage("The evidence image must be 10 MB or smaller.");
       event.target.value = "";
       return;
     }
@@ -120,6 +122,8 @@ export function AdminAddCreditsDialog({
         ? URL.createObjectURL(selectedFile)
         : null,
     );
+    setMessage(null);
+    setStep(2);
   }
 
   function continueToAmount(): void {
@@ -260,7 +264,7 @@ export function AdminAddCreditsDialog({
                     Add payment evidence
                   </span>
                   <span className="mt-1 block text-sm text-ink-muted">
-                    JPEG, PNG, or WebP · maximum 5 MB
+                    HEIC, HEIF, JPEG, PNG, or WebP · maximum 10 MB
                   </span>
                 </span>
               ) : (
@@ -287,7 +291,7 @@ export function AdminAddCreditsDialog({
                 <input
                   type="file"
                   aria-label="Take evidence photo"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/*"
                   capture="environment"
                   onChange={selectEvidence}
                   className="sr-only"
@@ -299,7 +303,7 @@ export function AdminAddCreditsDialog({
                 <input
                   type="file"
                   aria-label="Upload evidence image"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/heic,image/heif,image/jpeg,image/png,image/webp"
                   onChange={selectEvidence}
                   className="sr-only"
                 />

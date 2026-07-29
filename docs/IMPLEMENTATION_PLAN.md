@@ -61,7 +61,7 @@ Phase 1 project/tooling foundation.
 - [x] Define repository interfaces for accounts, wallets, ledger entries, token issuances, evidence, vendors, products, orders, refunds, settlements, audit logs, and event settings.
 - [x] Implement versioned IndexedDB adapters behind those interfaces.
 - [x] Build realistic, fictional seed data and first-run seeding.
-- [x] Add development-only data reset and reseed.
+- [x] Add deterministic first-run seeding and isolated test reset/reseed support.
 - [x] Implement an append-only audit service.
 - [x] Keep persistence and seeding outside React components.
 
@@ -98,7 +98,11 @@ Phase 2 accounts/audit repositories and stable wallet ownership; Phase 3 for PIN
 - [x] Add `PinVerificationService`, PIN setup, verification, and simulated lockout.
 - [x] Keep plain-text PINs out of normal application state, logs, errors, and audit metadata.
 - [x] Implement customer onboarding independently from authentication.
-- [x] Add the environment-gated role switcher and development data tools.
+- [x] Add the environment-gated role switcher.
+
+The browser-facing data reset/reseed route was removed during the 2026-07-29
+entry security cleanup. Reset helpers remain internal to isolated automated
+tests and deterministic first-run initialization.
 
 Gate passed on 2026-07-27 after independent boundary review and follow-up:
 repository handles remain private, development switching is gated at the
@@ -200,7 +204,8 @@ Also verify:
 
 - `npm install` succeeds from a clean dependency state.
 - `npm run dev` starts the application.
-- IndexedDB data survives refresh and can be reset and reseeded.
+- IndexedDB data survives refresh; no destructive reset/reseed control is
+  exposed in the application.
 - Customer onboarding, wallet, account QR, and purchase work.
 - Vendor QR, product management, refund, and settlement history work.
 - Staff issuance and local evidence attachment work.

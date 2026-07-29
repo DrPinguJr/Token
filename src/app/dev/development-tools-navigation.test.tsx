@@ -24,18 +24,7 @@ describe("DevelopmentToolsNavigation", () => {
       "page",
     );
     expect(
-      screen.getByRole("link", { name: "Local data" }),
-    ).not.toHaveAttribute("aria-current");
-  });
-
-  it("keeps active-location semantics on a nested data route", () => {
-    navigationMocks.pathname = "/dev/data/history";
-
-    render(<DevelopmentToolsNavigation />);
-
-    expect(screen.getByRole("link", { name: "Local data" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+      screen.queryByRole("link", { name: "Local data" }),
+    ).not.toBeInTheDocument();
   });
 });

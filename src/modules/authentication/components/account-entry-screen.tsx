@@ -1,18 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  ArrowRight,
-  CircleAlert,
-  CircleDotDashed,
-  LoaderCircle,
-  LockKeyhole,
-  ShieldCheck,
-  UserRound,
-  WalletCards,
-} from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import { ArrowRight, LoaderCircle, LockKeyhole, UserRound } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -26,20 +16,26 @@ import {
 } from "../mobile-account-entry-schema";
 
 export const ACCOUNT_ENTRY_RECOVERY_MESSAGE =
-  "Tokenly could not complete account entry right now. Try again or visit event help.";
+  "Tokenly could not complete account entry right now. Try again.";
 
 export interface AccountEntryScreenProps {
   readonly runtimeStatus: "error" | "loading" | "ready";
   readonly runtimeErrorMessage: string | null;
   readonly onEnter: (input: AccountEntryInput) => Promise<void>;
   readonly onRetry: () => Promise<void>;
+  readonly qrMode?: ReactNode;
 }
+
+const bigBlueOfficialSite = "https://www.bigbluesports.com.sg/";
+const bigBlueCourtImage =
+  "https://static.wixstatic.com/media/f07fb7_a52506d583eb40c78362d6a7390cff87~mv2.jpg/v1/fill/w_1200,h_1200,al_c,q_85,enc_auto/f07fb7_a52506d583eb40c78362d6a7390cff87~mv2.jpg";
 
 export function AccountEntryScreen({
   runtimeStatus,
   runtimeErrorMessage,
   onEnter,
   onRetry,
+  qrMode,
 }: AccountEntryScreenProps) {
   const [entryErrorKind, setEntryErrorKind] = useState<
     "account" | "runtime" | null
@@ -93,256 +89,189 @@ export function AccountEntryScreen({
     }
   });
 
-  const retryRuntime = async (): Promise<void> => {
+  async function retryRuntime(): Promise<void> {
     setIsRetrying(true);
     try {
       await onRetry();
     } catch {
-      // The stable runtime message remains visible; internal storage details do
-      // not belong in the account-entry UI.
+      // Stable, privacy-safe recovery copy remains visible.
     } finally {
       setIsRetrying(false);
     }
-  };
+  }
 
   return (
-    <section className="grid items-center gap-8 py-7 sm:py-12 lg:min-h-[calc(100vh-10rem)] lg:grid-cols-[minmax(0,0.92fr)_minmax(24rem,0.78fr)] lg:gap-16 lg:py-16">
-      <div className="max-w-2xl">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/78 px-3.5 py-2 text-sm font-semibold text-ink-muted shadow-soft ring-1 ring-ink/5 backdrop-blur">
-          <CircleDotDashed
-            aria-hidden="true"
-            className="size-4 text-brand-pink-strong"
-          />
-          Local event access
-        </div>
-
-        <h1 className="mt-5 text-4xl leading-[1.06] font-bold tracking-[-0.045em] text-balance text-ink sm:text-5xl lg:text-6xl">
-          Tokenly admin.
-          <span className="mt-1 block text-brand-blue-strong">
-            Manage tokener QR access.
-          </span>
-        </h1>
-        <p className="mt-5 max-w-xl text-lg leading-8 text-pretty text-ink-muted">
-          Sign in as the local super-admin to create and distribute one-time
-          claim QR codes. Tokeners do not sign in here.
-        </p>
-
-        <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-2">
-          <div className="rounded-card bg-white/70 p-4 shadow-soft ring-1 ring-white/90 backdrop-blur">
-            <span className="grid size-11 place-items-center rounded-2xl bg-brand-blue-soft text-brand-blue-strong">
-              <WalletCards aria-hidden="true" className="size-5.5" />
-            </span>
-            <p className="mt-4 font-bold text-ink">One local wallet</p>
-            <p className="mt-1 text-sm leading-6 text-ink-muted">
-              Operational accounts come from seeded browser data.
-            </p>
-          </div>
-          <div className="rounded-card bg-white/70 p-4 shadow-soft ring-1 ring-white/90 backdrop-blur">
-            <span className="grid size-11 place-items-center rounded-2xl bg-brand-mint-soft text-brand-mint-strong">
-              <ShieldCheck aria-hidden="true" className="size-5.5" />
-            </span>
-            <p className="mt-4 font-bold text-ink">Prototype only</p>
-            <p className="mt-1 text-sm leading-6 text-ink-muted">
-              No Supabase Auth, SMS, or external account is involved.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative mx-auto w-full max-w-lg">
-        <div
+    <main className="grid min-h-dvh bg-white lg:grid-cols-2">
+      <section className="relative min-h-72 overflow-hidden bg-ink lg:min-h-dvh">
+        {/* Official Big Blue Floorball School imagery. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={bigBlueCourtImage}
+          alt=""
           aria-hidden="true"
-          className="absolute -top-6 -right-5 size-24 rounded-full bg-brand-pink-soft blur-2xl"
+          className="absolute inset-0 size-full object-cover"
         />
         <div
           aria-hidden="true"
-          className="absolute -bottom-7 -left-6 size-28 rounded-full bg-brand-blue-soft blur-2xl"
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,22,37,0.12),rgba(10,22,37,0.82))]"
         />
+        <div className="relative flex min-h-72 items-end p-7 sm:p-10 lg:min-h-dvh lg:p-14">
+          <a
+            href={bigBlueOfficialSite}
+            target="_blank"
+            rel="noreferrer"
+            className="text-3xl leading-tight font-bold tracking-[-0.04em] text-white focus-visible:rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:text-4xl lg:text-5xl"
+          >
+            Tokenly <span className="text-brand-pink">×</span>{" "}
+            <span className="block">Big Blue Floorball</span>
+          </a>
+        </div>
+      </section>
 
-        <div className="tokenly-court-lines relative overflow-hidden rounded-[2rem] bg-white/90 p-5 shadow-floating ring-1 ring-white sm:p-7">
-          <div className="relative">
-            <span className="grid size-12 place-items-center rounded-2xl bg-ink text-white shadow-raised">
-              <UserRound aria-hidden="true" className="size-6" />
-            </span>
-            <h2 className="mt-5 text-2xl font-bold tracking-[-0.03em] text-ink">
-              Super-admin sign in
-            </h2>
-            <p className="mt-2 leading-7 text-ink-muted">
-              Use the seeded local admin username and password.
-            </p>
+      <section className="flex items-center justify-center px-5 py-10 sm:px-10 lg:min-h-dvh lg:px-16">
+        <div className="w-full max-w-md">
+          <h1 className="text-3xl font-bold tracking-[-0.04em] text-ink sm:text-4xl">
+            Log in
+          </h1>
 
-            <div
-              role="note"
-              className="mt-5 flex gap-3 rounded-2xl bg-brand-pink-soft p-4 text-sm leading-6 text-ink-soft"
-            >
-              <CircleAlert
-                aria-hidden="true"
-                className="mt-0.5 size-5 shrink-0 text-brand-pink-strong"
-              />
-              <p>
-                <span className="font-bold text-ink">
-                  Tokener access is QR-only.
-                </span>{" "}
-                Customers receive a one-time claim QR and then keep their
-                private account link. Anyone with that link can open the account
-                QR.
+          {runtimeStatus === "error" ? (
+            <div role="alert" className="mt-7 rounded-2xl bg-canvas p-5">
+              <p className="font-semibold text-ink">
+                {runtimeErrorMessage ?? "Tokenly could not open."}
               </p>
-            </div>
-
-            {runtimeStatus === "error" ? (
-              <div role="alert" className="mt-6 rounded-2xl bg-canvas-soft p-4">
-                <p className="font-semibold text-ink">
-                  Local data did not open
-                </p>
-                <p className="mt-1 text-sm leading-6 text-ink-muted">
-                  {runtimeErrorMessage ??
-                    "Tokenly local data is unavailable. Try opening it again."}
-                </p>
-                <button
-                  type="button"
-                  disabled={isRetrying}
-                  onClick={() => void retryRuntime()}
-                  className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-bold text-ink shadow-soft ring-1 ring-ink/8 transition hover:bg-brand-blue-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue-strong disabled:cursor-wait disabled:opacity-65"
-                >
-                  {isRetrying ? "Opening…" : "Try again"}
-                </button>
-              </div>
-            ) : (
-              <form
-                className="mt-6"
-                onSubmit={(event) => void submitEntry(event)}
+              <button
+                type="button"
+                disabled={isRetrying}
+                onClick={() => void retryRuntime()}
+                className="mt-4 min-h-12 rounded-full bg-ink px-5 py-3 font-semibold text-white disabled:cursor-wait disabled:opacity-60"
               >
-                <label
-                  htmlFor="username"
-                  className="text-sm font-bold text-ink"
-                >
-                  Username
-                </label>
-                <div className="relative mt-2">
-                  <UserRound
-                    aria-hidden="true"
-                    className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-muted"
-                  />
-                  <input
-                    {...usernameRegistration}
-                    id="username"
-                    type="text"
-                    inputMode="text"
-                    enterKeyHint="go"
-                    autoComplete="username"
-                    placeholder="AdminLance"
-                    aria-invalid={
-                      errors.username === undefined ? undefined : true
-                    }
-                    aria-describedby="username-hint username-error"
-                    disabled={isBusy}
-                    className="min-h-14 w-full rounded-2xl bg-canvas-soft py-3 pr-4 pl-12 text-lg font-semibold text-ink ring-1 ring-ink/8 transition outline-none placeholder:font-normal placeholder:text-ink-muted/70 hover:ring-ink/18 focus:bg-white focus:ring-2 focus:ring-brand-blue-strong disabled:cursor-wait disabled:opacity-65"
-                  />
-                </div>
-                <p
-                  id="username-hint"
-                  className="mt-2 text-sm leading-5 text-ink-muted"
-                >
-                  Seeded local admin: AdminLance.
-                </p>
+                {isRetrying ? "Opening..." : "Try again"}
+              </button>
+            </div>
+          ) : (
+            <form
+              className="mt-7"
+              onSubmit={(event) => void submitEntry(event)}
+            >
+              <label
+                htmlFor="username"
+                className="text-sm font-semibold text-ink"
+              >
+                Username
+              </label>
+              <div className="relative mt-2">
+                <UserRound
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-muted"
+                />
+                <input
+                  {...usernameRegistration}
+                  id="username"
+                  type="text"
+                  autoComplete="username"
+                  aria-invalid={
+                    errors.username === undefined ? undefined : true
+                  }
+                  aria-describedby="username-error"
+                  disabled={isBusy}
+                  className="min-h-14 w-full rounded-2xl bg-canvas py-3 pr-4 pl-12 text-lg text-ink ring-1 ring-ink/8 transition outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue-strong disabled:cursor-wait disabled:opacity-60"
+                />
+              </div>
+              {errors.username?.message !== undefined && (
                 <p
                   id="username-error"
-                  role={errors.username === undefined ? undefined : "alert"}
-                  className="mt-2 min-h-5 text-sm font-semibold text-danger"
+                  role="alert"
+                  className="mt-2 text-sm font-semibold text-danger"
                 >
-                  {errors.username?.message}
+                  {errors.username.message}
                 </p>
+              )}
 
-                <label
-                  htmlFor="password"
-                  className="mt-4 block text-sm font-bold text-ink"
-                >
-                  Password
-                </label>
-                <div className="relative mt-2">
-                  <LockKeyhole
-                    aria-hidden="true"
-                    className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-muted"
-                  />
-                  <input
-                    {...passwordRegistration}
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    aria-invalid={
-                      errors.password === undefined ? undefined : true
-                    }
-                    aria-describedby="password-error"
-                    disabled={isBusy}
-                    className="min-h-14 w-full rounded-2xl bg-canvas-soft py-3 pr-4 pl-12 text-lg font-semibold text-ink ring-1 ring-ink/8 transition outline-none hover:ring-ink/18 focus:bg-white focus:ring-2 focus:ring-brand-blue-strong disabled:cursor-wait disabled:opacity-65"
-                  />
-                </div>
+              <label
+                htmlFor="password"
+                className="mt-5 block text-sm font-semibold text-ink"
+              >
+                Password
+              </label>
+              <div className="relative mt-2">
+                <LockKeyhole
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-muted"
+                />
+                <input
+                  {...passwordRegistration}
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  aria-invalid={
+                    errors.password === undefined ? undefined : true
+                  }
+                  aria-describedby="password-error"
+                  disabled={isBusy}
+                  className="min-h-14 w-full rounded-2xl bg-canvas py-3 pr-4 pl-12 text-lg text-ink ring-1 ring-ink/8 transition outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue-strong disabled:cursor-wait disabled:opacity-60"
+                />
+              </div>
+              {errors.password?.message !== undefined && (
                 <p
                   id="password-error"
-                  role={errors.password === undefined ? undefined : "alert"}
-                  className="mt-2 min-h-5 text-sm font-semibold text-danger"
+                  role="alert"
+                  className="mt-2 text-sm font-semibold text-danger"
                 >
-                  {errors.password?.message}
+                  {errors.password.message}
                 </p>
+              )}
 
-                {errors.root?.message !== undefined && (
-                  <div
-                    role="alert"
-                    className={`mt-2 rounded-2xl px-4 py-3 text-sm font-semibold ${
-                      entryErrorKind === "runtime"
-                        ? "bg-brand-blue-soft text-ink"
-                        : "bg-brand-pink-soft text-danger"
-                    }`}
-                  >
-                    <p>{errors.root.message}</p>
-                    {entryErrorKind === "runtime" && (
-                      <button
-                        type="button"
-                        disabled={isRetrying}
-                        onClick={() => void retryRuntime()}
-                        className="mt-2 min-h-11 rounded-full bg-white px-4 py-2 text-sm font-bold text-ink shadow-soft ring-1 ring-ink/8 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue-strong disabled:cursor-wait disabled:opacity-65"
-                      >
-                        {isRetrying ? "Openingâ€¦" : "Reopen local data"}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={isBusy}
-                  className="mt-4 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-3.5 font-bold text-white shadow-raised transition hover:-translate-y-0.5 hover:bg-ink-soft focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-blue-strong disabled:translate-y-0 disabled:cursor-wait disabled:opacity-65"
+              {errors.root?.message !== undefined && (
+                <div
+                  role="alert"
+                  className={`mt-4 rounded-2xl px-4 py-3 text-sm font-semibold ${
+                    entryErrorKind === "runtime"
+                      ? "bg-brand-blue-soft text-ink"
+                      : "bg-brand-pink-soft text-danger"
+                  }`}
                 >
-                  {isBusy ? (
-                    <>
-                      <LoaderCircle
-                        aria-hidden="true"
-                        className="size-5 motion-safe:animate-spin"
-                      />
-                      Opening Tokenly…
-                    </>
-                  ) : (
-                    <>
-                      Continue
-                      <ArrowRight aria-hidden="true" className="size-5" />
-                    </>
+                  <p>{errors.root.message}</p>
+                  {entryErrorKind === "runtime" && (
+                    <button
+                      type="button"
+                      disabled={isRetrying}
+                      onClick={() => void retryRuntime()}
+                      className="mt-3 min-h-11 rounded-full bg-white px-4 py-2 font-semibold text-ink shadow-soft disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {isRetrying ? "Opening..." : "Try again"}
+                    </button>
                   )}
-                </button>
-              </form>
-            )}
+                </div>
+              )}
 
-            <p className="mt-6 border-t border-ink/6 pt-5 text-center text-sm text-ink-muted">
-              Need a hand?{" "}
-              <Link
-                href="/help"
-                className="inline-flex min-h-11 items-center px-1 font-bold text-ink underline decoration-brand-pink decoration-2 underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue-strong"
+              <button
+                type="submit"
+                disabled={isBusy}
+                className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-3.5 font-bold text-white shadow-raised transition hover:bg-ink-soft focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-blue-strong disabled:cursor-wait disabled:opacity-60"
               >
-                Visit event help
-              </Link>
-            </p>
-          </div>
+                {isBusy ? (
+                  <>
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className="size-5 motion-safe:animate-spin"
+                    />
+                    Logging in...
+                  </>
+                ) : (
+                  <>
+                    Log in
+                    <ArrowRight aria-hidden="true" className="size-5" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {qrMode !== undefined && (
+            <div className="mt-7 border-t border-ink/10 pt-6">{qrMode}</div>
+          )}
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }
