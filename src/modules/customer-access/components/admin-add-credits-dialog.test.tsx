@@ -56,6 +56,7 @@ describe("AdminAddCreditsDialog", () => {
     ).toBeVisible();
 
     await user.type(screen.getByPlaceholderText("0.00"), "12.50");
+    expect(screen.getByText("12.5", { selector: "strong" })).toBeVisible();
     await user.click(
       screen.getByRole("button", { name: "Confirm add credits" }),
     );
@@ -67,6 +68,61 @@ describe("AdminAddCreditsDialog", () => {
       paymentMethod: "cash",
     });
     expect(onComplete).toHaveBeenCalledOnce();
+  });
+
+  it("shows the one-to-one token amount before confirmation", async () => {
+    const user = userEvent.setup();
+    const evidence = new File(["safe-image-bytes"], "cash.webp", {
+      type: "image/webp",
+    });
+
+    render(
+      <AdminAddCreditsDialog
+        customerId="customer-1"
+        customerName="Lance Tan"
+        onClose={vi.fn()}
+        onComplete={vi.fn()}
+        submitCredits={vi.fn()}
+      />,
+    );
+
+    await user.upload(screen.getByLabelText("Upload evidence image"), evidence);
+    await user.type(screen.getByPlaceholderText("0.00"), "50");
+
+    expect(screen.getByText("S$1.00 = 1 token.")).toBeVisible();
+    expect(screen.getByText("50", { selector: "strong" })).toBeVisible();
+  });
+
+  it("issues a fractional token amount from cents", async () => {
+    const user = userEvent.setup();
+    const submitCredits = vi.fn();
+    const evidence = new File(["safe-image-bytes"], "cash.webp", {
+      type: "image/webp",
+    });
+
+    render(
+      <AdminAddCreditsDialog
+        customerId="customer-1"
+        customerName="Lance Tan"
+        onClose={vi.fn()}
+        onComplete={vi.fn()}
+        submitCredits={submitCredits}
+      />,
+    );
+
+    await user.upload(screen.getByLabelText("Upload evidence image"), evidence);
+    await user.type(screen.getByPlaceholderText("0.00"), "0.50");
+    expect(screen.getByText("0.5", { selector: "strong" })).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "Confirm add credits" }),
+    );
+
+    expect(submitCredits).toHaveBeenCalledWith({
+      amountCents: 50,
+      customerId: "customer-1",
+      evidence,
+      paymentMethod: "paynow",
+    });
   });
 
   it("rejects unsupported or oversized evidence before submission", () => {

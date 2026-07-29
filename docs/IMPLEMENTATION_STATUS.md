@@ -191,6 +191,16 @@ A private Supabase Storage bucket and atomic database function record evidence
 metadata and its audit before appending the token issuance, ledger credit, and
 issuance audit. Evidence bytes remain outside audit metadata.
 
+The deployed-prototype credit rule is now fixed at **S$1.00 = 1 token**. The
+amount step previews the exact result before confirmation, including fractional
+credits such as S$0.50 to 0.5 token and S$12.50 to 12.5 tokens. Supabase stores
+issuance and ledger token amounts as fixed `numeric(14,2)` values. Bootstrap
+repairs a missing event settings row and changes an older rate to one token per
+dollar. The issuance boundary also rejects a database result that does not
+match that one-to-one calculation. Migration
+`20260729161500_set_one_to_one_token_rate.sql` upgrades projects where the
+earlier credit migration was already applied.
+
 The incremental administrator activity route `/admin/transactions` now loads
 ledger entries directly from the Supabase-backed API. It displays issued,
 spent, refunded, and distinct transaction-group metrics, a recent technical
@@ -306,6 +316,18 @@ back to IndexedDB for hosted records.
 | `npm run typecheck`                       | Passed, 2026-07-29  | Repository-wide `tsc --noEmit` completed after regenerating route types without `/dev/data`                                                                                                                                                          |
 | `npm run test`                            | Passed, 2026-07-29  | Repository-wide Vitest suite passed: 60 test files and 315 tests                                                                                                                                                                                     |
 | `npm run build`                           | Passed, 2026-07-29  | Next.js 16.2.12 production build completed with `/enter`, `/dev`, and `/dev/role-switcher`; `/dev/data` is absent from the emitted route table                                                                                                       |
+| One-to-one credit focused tests           | Passed, 2026-07-29  | 7 focused modal tests passed, including S$50-to-50-token and S$0.50-to-0.5-token previews                                                                                                                                                            |
+| `npm run format:check`                    | Passed, 2026-07-29  | Repository-wide Prettier check completed after the one-to-one conversion changes                                                                                                                                                                     |
+| `npm run lint`                            | Passed, 2026-07-29  | Repository-wide ESLint completed without errors or warnings                                                                                                                                                                                          |
+| `npm run typecheck`                       | Passed, 2026-07-29  | Repository-wide `tsc --noEmit` completed with the rate enforcement and bootstrap repair                                                                                                                                                              |
+| `npm run test`                            | Passed, 2026-07-29  | Repository-wide Vitest suite passed: 60 test files and 317 tests                                                                                                                                                                                     |
+| `npm run build`                           | Passed, 2026-07-29  | Next.js 16.2.12 production build completed with the one-to-one admin credit issuance path                                                                                                                                                            |
+| Fractional credit focused tests           | Passed, 2026-07-29  | 7 focused modal tests passed, including S$0.50-to-0.5-token submission                                                                                                                                                                               |
+| `npm run format:check`                    | Passed, 2026-07-29  | Repository-wide Prettier check completed after fixed-decimal token support                                                                                                                                                                           |
+| `npm run lint`                            | Passed, 2026-07-29  | Repository-wide ESLint completed without errors or warnings                                                                                                                                                                                          |
+| `npm run typecheck`                       | Passed, 2026-07-29  | Repository-wide `tsc --noEmit` completed with fractional Supabase ledger amounts                                                                                                                                                                     |
+| `npm run test`                            | Passed, 2026-07-29  | Repository-wide Vitest suite passed: 60 test files and 317 tests                                                                                                                                                                                     |
+| `npm run build`                           | Environment blocked | Next.js could not unlink the existing OneDrive reparse-point directory `.next/static/dP88xmBa-KFHq-ebKPEg4` (`EPERM`); three retries produced the same filesystem error before compilation                                                           |
 
 Replace “Not run/recorded” with the date, command, outcome, and concise failure limitation when a check is actually executed.
 
@@ -331,6 +353,7 @@ help. Use only capability-specific read/mutation boundaries; repository handles
 and PIN credentials remain private.
 
 Apply and smoke-test the pending
-`20260729143000_add_admin_credit_issuance.sql` migration against the connected
-Supabase prototype before treating remote evidence-backed credit issuance as
-available outside the local development build.
+`20260729143000_add_admin_credit_issuance.sql` and
+`20260729161500_set_one_to_one_token_rate.sql` migrations against the connected
+Supabase prototype before treating remote one-to-one evidence-backed credit
+issuance as available outside the local development build.

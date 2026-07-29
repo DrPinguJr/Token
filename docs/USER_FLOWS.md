@@ -176,9 +176,11 @@ Duplicate idempotency, over-refund, invalid amount, insufficient vendor balance,
    MB, and a valid selection advances directly to the amount step.
 4. The screen states that the image is manual evidence and does not mean
    Tokenly verified the payment.
-5. Step 2 requires a positive Singapore-dollar amount.
-6. The service reads the current event conversion rate and derives a positive
-   whole-token credit.
+5. Step 2 requires a positive amount and displays the fixed prototype rate:
+   **S$1.00 = 1 token**.
+6. The screen previews the exact credit before confirmation. Token amounts
+   support two decimal places, so S$0.50 issues 0.5 token and S$12.50 issues
+   12.5 tokens.
 7. The image is uploaded under an opaque private storage key. Image bytes are
    never written into audit metadata.
 8. One database transaction records the evidence row and evidence audit first,

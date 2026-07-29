@@ -49,6 +49,12 @@ function parseAmountCents(value: string): number | null {
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
 }
 
+export function calculateOneToOneTokenAmount(amountCents: number): number {
+  return Number.isSafeInteger(amountCents) && amountCents > 0
+    ? amountCents / 100
+    : 0;
+}
+
 export function AdminAddCreditsDialog({
   customerId,
   customerName,
@@ -66,6 +72,9 @@ export function AdminAddCreditsDialog({
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const amountCents = parseAmountCents(amount);
+  const tokenAmount =
+    amountCents === null ? 0 : calculateOneToOneTokenAmount(amountCents);
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent): void {
@@ -140,8 +149,6 @@ export function AdminAddCreditsDialog({
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    const amountCents = parseAmountCents(amount);
-
     if (evidence === null) {
       setStep(1);
       setMessage("Take or upload an evidence photo before continuing.");
@@ -165,7 +172,7 @@ export function AdminAddCreditsDialog({
       onComplete();
     } catch {
       setMessage(
-        "Credits could not be issued. No wallet credit was reported as complete.",
+        "Credits could not be issued. Try again or ask an administrator to check the database setup.",
       );
     } finally {
       setIsSaving(false);
@@ -333,8 +340,7 @@ export function AdminAddCreditsDialog({
               Enter amount received
             </h3>
             <p className="mt-2 text-sm leading-6 text-ink-muted">
-              The current event conversion rate will be applied when you
-              confirm.
+              S$1.00 = 1 token.
             </p>
             <label className="mt-5 block">
               <span className="text-sm font-semibold text-ink">
@@ -353,6 +359,14 @@ export function AdminAddCreditsDialog({
               </span>
             </label>
 
+            <div className="mt-4 flex items-center justify-between rounded-2xl bg-brand-blue-soft p-4">
+              <span className="text-sm font-semibold text-ink">
+                Tokens to issue
+              </span>
+              <strong className="text-2xl text-brand-blue-strong">
+                {tokenAmount}
+              </strong>
+            </div>
             <div className="mt-5 rounded-2xl bg-brand-mint-soft p-4 text-sm leading-6 text-ink">
               <p className="flex items-start gap-2 font-semibold">
                 <CheckCircle2

@@ -28,7 +28,7 @@ Use **Tokener** only in short, friendly customer-facing copy. Use **customer** i
 
 Definitions:
 
-- **Token:** a positive integer event value unit. Fractional tokens do not exist.
+- **Token:** a positive event value unit stored to at most two decimal places.
 - **Wallet:** an account-owned container whose balance is calculated from ledger entries.
 - **Ledger entry:** an immutable debit or credit that contributes to a wallet balance.
 - **Transaction group:** an identifier tying the records for one business operation together.
@@ -78,7 +78,8 @@ Preferred customer phrases include “Welcome to Tokenly”, “Welcome back, To
 
 - Dashboard metrics and warnings.
 - Customer search, QR lookup, and development scan simulator.
-- PayNow amount entry and token conversion using the configured rate.
+- PayNow amount entry with an explicit S$1.00-to-1-token preview and token
+  amounts accurate to two decimal places.
 - Local screenshot capture or upload with type and size validation.
 - Optional payment reference and note, duplicate-reference warning, review, confirmation, receipt, ledger entry, and audit entry.
 - Explicit copy that payment verification is a manual staff responsibility.
@@ -97,7 +98,8 @@ Preferred customer phrases include “Welcome to Tokenly”, “Welcome back, To
 - Transaction tracing that connects actor, customer, vendor, order, evidence, ledger entries, refund, settlement, and audit records.
 - Filtered CSV exports.
 - Reasoned administrative adjustments.
-- Event identity, token conversion rate, and support configuration.
+- Event identity, fixed prototype token conversion rate, and support
+  configuration.
 - Manual vendor settlement records with draft, approved, and paid states.
 
 ### QR experience

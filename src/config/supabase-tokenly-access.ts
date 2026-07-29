@@ -21,6 +21,8 @@ const defaultEventName = "Tokenly Event";
 const defaultEventVenue = "Event venue";
 const defaultAdminUsername = "AdminLance";
 const defaultVendorUsername = "Vendor1";
+const defaultTokensPerDollar = 1;
+const fractionalTokenAmountSchema = z.number().positive().multipleOf(0.01);
 
 const nricSchema = z
   .string()
@@ -169,7 +171,7 @@ const ledgerEntryRowSchema = z
     occurred_at: z.string(),
     reference: z.string(),
     related_order_id: z.string().uuid().nullable().optional(),
-    token_amount: z.number().int().positive(),
+    token_amount: fractionalTokenAmountSchema,
     transaction_group_id: z.string().uuid(),
   })
   .passthrough();
@@ -190,7 +192,7 @@ const adminLedgerEntryRowSchema = z
     id: z.string().uuid(),
     occurred_at: z.string(),
     reference: z.string(),
-    token_amount: z.number().int().positive(),
+    token_amount: fractionalTokenAmountSchema,
     transaction_group_id: z.string().uuid(),
   })
   .strict();
@@ -336,15 +338,36 @@ async function ensureSupabaseBaseline(): Promise<{
 
     assertNoSupabaseError(insertedEvent.error);
     eventId = eventRowSchema.parse(insertedEvent.data).id;
+  }
 
+  const existingSettings = await supabase
+    .from("event_settings")
+    .select("tokens_per_dollar")
+    .eq("event_id", eventId)
+    .maybeSingle();
+  assertNoSupabaseError(existingSettings.error);
+
+  if (existingSettings.data === null) {
     const settings = await supabase.from("event_settings").insert({
       event_id: eventId,
       support_contact: "Event desk",
       support_instructions: "Ask the event desk for Tokenly account help.",
       support_label: "Tokenly help",
-      tokens_per_dollar: 10,
+      tokens_per_dollar: defaultTokensPerDollar,
       updated_by_account_id: adminAccountId,
     });
+    assertNoSupabaseError(settings.error);
+  } else if (
+    existingSettings.data.tokens_per_dollar !== defaultTokensPerDollar
+  ) {
+    const settings = await supabase
+      .from("event_settings")
+      .update({
+        tokens_per_dollar: defaultTokensPerDollar,
+        updated_at: new Date().toISOString(),
+        updated_by_account_id: adminAccountId,
+      })
+      .eq("event_id", eventId);
     assertNoSupabaseError(settings.error);
   }
 
@@ -964,6 +987,19 @@ export async function createSupabaseCreditIssuance(
       .remove([storagePath])
       .catch(() => undefined);
     assertNoSupabaseError(issuance.error);
+  }
+
+  const issuedTokenAmount = z.coerce
+    .number()
+    .positive()
+    .multipleOf(0.01)
+    .parse(issuance.data);
+  const expectedTokenAmount = parsed.amountCents / 100;
+  if (issuedTokenAmount !== expectedTokenAmount) {
+    throw new SupabaseTokenlyAccessError(
+      "TOKENLY_SUPABASE_WRITE_FAILED",
+      "Issued token amount did not match the configured one-to-one rate.",
+    );
   }
 
   return toSummary(customer);

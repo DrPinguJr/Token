@@ -16,7 +16,10 @@ The ledger is the sole source of wallet balances.
 - A wallet balance is calculated as credits minus debits.
 - There is no stored editable balance and no `setBalance` repository method.
 - Ledger entries are append-only and cannot be edited or deleted.
-- Every entry records a positive integer token amount, direction, type, wallet, actor, transaction-group ID, timestamp, idempotency key, safe reference/description, and relevant relationships.
+- Every entry records a positive fixed-decimal token amount with at most two
+  decimal places, direction, type, wallet, actor, transaction-group ID,
+  timestamp, idempotency key, safe reference/description, and relevant
+  relationships.
 - Purchases create a customer debit and equal vendor credit in one transaction group.
 - Refunds create a customer credit and equal vendor debit, linked to the original entries.
 - Issuances create explicit customer credits and preserve evidence, amount, conversion rate, and staff actor.
@@ -56,7 +59,7 @@ The ledger is the sole source of wallet balances.
 - Equal debit/credit totals for purchase and refund groups.
 - Non-negative resulting wallets.
 - Unique idempotency keys.
-- Positive integer amounts.
+- Positive fixed-decimal token amounts with at most two decimal places.
 - Original preservation and reversal relationship.
 - Cumulative refunds no greater than the order total.
 - Actor and audit record present in every committed mutation.

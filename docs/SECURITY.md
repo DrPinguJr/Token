@@ -50,7 +50,8 @@ Route guards improve navigation, but every sensitive service must validate actor
 
 - Calculate balances from immutable ledger entries.
 - Never expose or implement `setBalance`.
-- Require positive integer amounts and quantities.
+- Require positive fixed-precision token amounts and positive integer
+  quantities.
 - Recalculate product prices and availability from repositories.
 - Reject negative balance, duplicate idempotency, zero-item order, completed-order modification, and over-refund.
 - Record an actor and transaction-group ID for every mutation.
@@ -156,7 +157,8 @@ Customer-visible errors are short and safe. Operational errors use stable error 
 - Export only fields permitted for the administrator view.
 - Apply the same filters and authorization as the on-screen query.
 - Prefix spreadsheet-formula-leading values (`=`, `+`, `-`, `@`) safely.
-- Use explicit UTC timestamp formatting and integer amounts.
+- Use explicit UTC timestamp formatting, integer currency minor units, and
+  fixed-precision token amounts.
 - Avoid including credential, PIN-attempt detail, evidence bytes, or internal secrets.
 
 ## Development tools

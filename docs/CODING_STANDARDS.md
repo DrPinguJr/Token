@@ -70,7 +70,8 @@ Do not create generic dumping grounds named `utils.ts`, `helpers.ts`, `common.ts
 
 ## Numeric and time rules
 
-- Token amounts and product quantities are positive safe integers.
+- Token amounts are positive fixed-decimal values with at most two decimal
+  places. Product quantities remain positive safe integers.
 - Money is integer cents.
 - Never calculate currency with binary floating-point.
 - Persist UTC timestamps; format them in the user’s locale at the view boundary.

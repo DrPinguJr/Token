@@ -1,22 +1,26 @@
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'payment-evidence',
-  'payment-evidence',
-  false,
-  10485760,
-  array['image/heic', 'image/heif', 'image/jpeg', 'image/png', 'image/webp']
-)
-on conflict (id) do update
-set
-  public = excluded.public,
-  file_size_limit = excluded.file_size_limit,
-  allowed_mime_types = excluded.allowed_mime_types;
-
 update public.event_settings
 set
   tokens_per_dollar = 1,
   updated_at = now()
 where tokens_per_dollar <> 1;
+
+drop function if exists public.admin_issue_customer_credits(
+  uuid,
+  uuid,
+  uuid,
+  text,
+  text,
+  text,
+  bigint,
+  text,
+  integer,
+  uuid,
+  uuid,
+  uuid,
+  text,
+  text,
+  timestamptz
+);
 
 alter table public.token_issuances
   alter column token_amount type numeric(14, 2)
@@ -34,7 +38,7 @@ alter table public.ledger_entries
   alter column token_amount type numeric(14, 2)
   using token_amount::numeric(14, 2);
 
-create or replace function public.admin_issue_customer_credits(
+create function public.admin_issue_customer_credits(
   p_customer_id uuid,
   p_actor_account_id uuid,
   p_evidence_id uuid,
@@ -124,10 +128,6 @@ begin
 
   v_token_amount :=
     round((p_amount_cents::numeric * v_tokens_per_dollar) / 100, 2);
-
-  if v_token_amount <= 0 then
-    raise exception 'Payment amount converts to zero credits';
-  end if;
 
   insert into public.evidence (
     id,

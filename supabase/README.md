@@ -96,7 +96,8 @@ Each operation must:
 - validate role and ownership;
 - reload authoritative records;
 - lock or otherwise serialize relevant wallet/order/idempotency rows;
-- validate positive integer values and sufficient balance;
+- validate positive fixed-decimal token values, integer quantities, and
+  sufficient balance;
 - enforce idempotency;
 - append ledger and audit records atomically;
 - return a safe receipt/read model.
