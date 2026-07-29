@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, LoaderCircle, LockKeyhole, UserRound } from "lucide-react";
+import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
@@ -27,8 +28,8 @@ export interface AccountEntryScreenProps {
 }
 
 const bigBlueOfficialSite = "https://www.bigbluesports.com.sg/";
-const bigBlueCourtImage =
-  "https://static.wixstatic.com/media/f07fb7_a52506d583eb40c78362d6a7390cff87~mv2.jpg/v1/fill/w_1200,h_1200,al_c,q_85,enc_auto/f07fb7_a52506d583eb40c78362d6a7390cff87~mv2.jpg";
+const bigBlueCourtImage = "/brand/big-blue-floorball-hero.png";
+const bigBlueTokenBoothImage = "/brand/big-blue-token-booth.png";
 
 export function AccountEntryScreen({
   runtimeStatus,
@@ -102,19 +103,34 @@ export function AccountEntryScreen({
 
   return (
     <main className="grid min-h-dvh bg-white lg:grid-cols-2">
-      <section className="relative min-h-72 overflow-hidden bg-ink lg:min-h-dvh">
-        {/* Official Big Blue Floorball School imagery. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <section className="relative min-h-72 overflow-hidden bg-[#075ca8] lg:min-h-dvh">
+        <Image
           src={bigBlueCourtImage}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 size-full object-cover"
+          fill
+          priority
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="object-cover"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,22,37,0.12),rgba(10,22,37,0.82))]"
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,92,168,0.1),rgba(10,22,37,0.18)_42%,rgba(10,22,37,0.84))]"
         />
+        <div
+          aria-hidden="true"
+          className="absolute top-5 right-5 hidden aspect-[4/3] w-36 overflow-hidden rounded-lg border border-white/45 bg-white/20 p-1 shadow-raised sm:block lg:top-8 lg:right-8 lg:w-52"
+        >
+          <div className="relative size-full overflow-hidden rounded-md">
+            <Image
+              src={bigBlueTokenBoothImage}
+              alt=""
+              fill
+              sizes="(min-width: 1024px) 13rem, 9rem"
+              className="object-cover"
+            />
+          </div>
+        </div>
         <div className="relative flex min-h-72 items-end p-7 sm:p-10 lg:min-h-dvh lg:p-14">
           <a
             href={bigBlueOfficialSite}
@@ -122,7 +138,7 @@ export function AccountEntryScreen({
             rel="noreferrer"
             className="text-3xl leading-tight font-bold tracking-[-0.04em] text-white focus-visible:rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:text-4xl lg:text-5xl"
           >
-            Tokenly <span className="text-brand-pink">×</span>{" "}
+            Tokenly <span className="text-brand-pink">x</span>{" "}
             <span className="block">Big Blue Floorball</span>
           </a>
         </div>

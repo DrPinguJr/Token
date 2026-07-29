@@ -30,12 +30,13 @@ export default defineConfig({
       name: "tablet-chromium",
       use: {
         ...devices["iPad Mini"],
+        browserName: "chromium",
         viewport: { width: 768, height: 1024 },
       },
     },
   ],
   webServer: {
-    command: "npm run dev",
+    command: "npm run dev -- --hostname 127.0.0.1",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

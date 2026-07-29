@@ -304,7 +304,7 @@ export function AdminTokenersScreen({
           {loadErrorCode === "SUPABASE_SERVER_CONFIGURATION_ERROR"
             ? "Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY to .env.local, then restart the development server."
             : loadErrorCode === "PROTOTYPE_SESSION_ROLE_UNAVAILABLE"
-              ? "Your hosted admin session is missing or expired. Sign out, then sign in as AdminLance again."
+              ? "Your hosted admin session is missing or expired. Sign out, then sign in with an administrator account again."
               : "Supabase tokener records are unavailable. Check the server connection and try again."}
         </p>
         <button

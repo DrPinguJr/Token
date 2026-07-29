@@ -1,14 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-test("introduces Tokenly and offers the primary entry action", async ({
-  page,
-}) => {
+test("opens the Tokenly entry screen", async ({ page }) => {
   await page.goto("/");
 
+  await expect(page).toHaveURL(/\/enter$/);
   await expect(
-    page.getByRole("heading", {
-      name: "Your event tokens, in one happy place.",
-    }),
+    page.getByRole("link", { name: "Tokenly x Big Blue Floorball" }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Enter Tokenly" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Log in" })).toBeVisible();
 });

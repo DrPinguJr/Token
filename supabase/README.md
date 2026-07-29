@@ -20,12 +20,20 @@ This directory now contains:
   customer NRIC/FIN field used by the deployed tokener creation prototype.
 - `migrations/20260729143000_add_admin_credit_issuance.sql`: adds the private
   payment-evidence bucket and atomic evidence-backed customer credit function.
+- `migrations/20260729161500_set_one_to_one_token_rate.sql`: enforces the
+  deployed prototype rate of one token per Singapore dollar and keeps Supabase
+  token amounts at fixed two-decimal precision.
+- `migrations/20260729225000_add_vendor_customer_charge.sql`: adds the hosted
+  vendor quick-charge function that appends paired customer debit and vendor
+  credit ledger entries with an audit record.
+- `migrations/20260729231500_add_vendor_customer_return.sql`: adds the hosted
+  vendor quick-return function that credits a customer wallet and debits the
+  vendor wallet for quick add/refund interactions.
 - `planned-schema.sql`: older non-executable planning material retained for
   design context.
 
-The initial and NRIC migrations have been pushed to the hosted Supabase
-project. The evidence-backed credit migration remains pending until migration
-credentials are supplied. Migration pushes require a database migration
+All executable migrations in `supabase/migrations/` have been pushed to the
+hosted Supabase project. Migration pushes require a database migration
 credential such as `SUPABASE_ACCESS_TOKEN` plus database password, or a direct
 database URL. Publishable, anon, secret, and service-role API keys are not a
 substitute for a database migration credential.

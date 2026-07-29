@@ -38,7 +38,7 @@ describe("AccountEntryScreen", () => {
 
     expect(
       screen.getByRole("link", {
-        name: /Tokenly × Big Blue Floorball/i,
+        name: /Tokenly x Big Blue Floorball/i,
       }),
     ).toHaveAttribute("href", "https://www.bigbluesports.com.sg/");
     expect(screen.getByRole("heading", { name: "Log in" })).toBeVisible();

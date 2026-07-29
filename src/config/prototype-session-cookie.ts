@@ -4,22 +4,15 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { z } from "zod";
 
+import { prototypeOperationalCredentials } from "@/modules/authentication/prototype-operational-credentials";
+
 const cookieName = "tokenly_prototype_session";
+type PrototypeRole = (typeof prototypeOperationalCredentials)[number]["role"];
 
-const prototypeCredentials = Object.freeze([
-  {
-    password: "Lance888!",
-    role: "administrator",
-    username: "AdminLance",
-  },
-  {
-    password: "Vendor1",
-    role: "vendor",
-    username: "Vendor1",
-  },
-] as const);
-
-type PrototypeRole = (typeof prototypeCredentials)[number]["role"];
+export interface PrototypeSession {
+  readonly role: PrototypeRole;
+  readonly username: string;
+}
 
 export class PrototypeSessionRoleError extends Error {
   public readonly code = "PROTOTYPE_SESSION_ROLE_UNAVAILABLE";
@@ -34,6 +27,7 @@ const cookieValueSchema = z
   .object({
     role: z.enum(["administrator", "vendor"]),
     signature: z.string().min(1),
+    username: z.string().min(1),
   })
   .strict();
 
@@ -46,13 +40,18 @@ function getSigningSecret(): string {
   return secret;
 }
 
-function signRole(role: PrototypeRole): string {
-  return createHmac("sha256", getSigningSecret()).update(role).digest("hex");
+function signSession(input: {
+  readonly role: PrototypeRole;
+  readonly username: string;
+}): string {
+  return createHmac("sha256", getSigningSecret())
+    .update(`${input.role}:${input.username}`)
+    .digest("hex");
 }
 
-function encodeCookie(role: PrototypeRole): string {
+function encodeCookie(session: PrototypeSession): string {
   return Buffer.from(
-    JSON.stringify({ role, signature: signRole(role) }),
+    JSON.stringify({ ...session, signature: signSession(session) }),
     "utf8",
   ).toString("base64url");
 }
@@ -61,7 +60,7 @@ function getSecureCookieAttribute(): string {
   return process.env.NODE_ENV === "development" ? "" : "; Secure";
 }
 
-function decodeCookie(value: string): PrototypeRole | null {
+function decodeCookie(value: string): PrototypeSession | null {
   let parsedValue: unknown;
   try {
     parsedValue = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
@@ -74,14 +73,17 @@ function decodeCookie(value: string): PrototypeRole | null {
     return null;
   }
 
-  const expected = Buffer.from(signRole(parsed.data.role), "utf8");
+  const expected = Buffer.from(signSession(parsed.data), "utf8");
   const actual = Buffer.from(parsed.data.signature, "utf8");
 
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
     return null;
   }
 
-  return parsed.data.role;
+  return {
+    role: parsed.data.role,
+    username: parsed.data.username,
+  };
 }
 
 function readCookieValue(request: Request): string | null {
@@ -103,7 +105,7 @@ export function createPrototypeSessionCookie(input: {
   readonly username: string;
 }): string | null {
   const credential =
-    prototypeCredentials.find(
+    prototypeOperationalCredentials.find(
       (candidate) =>
         candidate.username === input.username &&
         candidate.password === input.password,
@@ -113,9 +115,10 @@ export function createPrototypeSessionCookie(input: {
     return null;
   }
 
-  return `${cookieName}=${encodeCookie(
-    credential.role,
-  )}; Path=/; HttpOnly; SameSite=Lax${getSecureCookieAttribute()}; Max-Age=28800`;
+  return `${cookieName}=${encodeCookie({
+    role: credential.role,
+    username: credential.username,
+  })}; Path=/; HttpOnly; SameSite=Lax${getSecureCookieAttribute()}; Max-Age=28800`;
 }
 
 export function createPrototypeSessionClearCookie(): string {
@@ -125,11 +128,13 @@ export function createPrototypeSessionClearCookie(): string {
 export function requirePrototypeRole(
   request: Request,
   role: PrototypeRole,
-): void {
+): PrototypeSession {
   const cookieValue = readCookieValue(request);
-  const actualRole = cookieValue === null ? null : decodeCookie(cookieValue);
+  const session = cookieValue === null ? null : decodeCookie(cookieValue);
 
-  if (actualRole !== role) {
+  if (session?.role !== role) {
     throw new PrototypeSessionRoleError();
   }
+
+  return session;
 }

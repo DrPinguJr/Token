@@ -15,6 +15,17 @@ export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({ customerId: z.string().uuid() }).strict();
 
+function isEvidenceFile(value: FormDataEntryValue | null): value is File {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    typeof value.arrayBuffer === "function" &&
+    "name" in value &&
+    "size" in value &&
+    "type" in value
+  );
+}
+
 export async function POST(
   request: Request,
   context: { readonly params: Promise<{ readonly customerId: string }> },
@@ -24,7 +35,7 @@ export async function POST(
     const { customerId } = paramsSchema.parse(await context.params);
     const formData = await request.formData();
     const evidence = formData.get("evidence");
-    if (!(evidence instanceof File)) {
+    if (!isEvidenceFile(evidence)) {
       throw new SupabaseTokenlyAccessError(
         "INVALID_INPUT",
         "Payment evidence is required.",

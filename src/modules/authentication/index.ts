@@ -73,6 +73,11 @@ export type {
 } from "./pin-verification-service";
 export { PinCredentialDerivationUnavailableError } from "./prototype-pin-credential";
 export {
+  prototypeOperationalCredentials,
+  prototypeVendorCredentials,
+} from "./prototype-operational-credentials";
+export type { PrototypeOperationalCredential } from "./prototype-operational-credentials";
+export {
   RolePermissionDeniedError,
   assertRolePermission,
   decideRoleAccess,

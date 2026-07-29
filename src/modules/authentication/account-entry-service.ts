@@ -11,22 +11,10 @@ import {
   accountEntrySchema,
   type AccountEntryInput,
 } from "./mobile-account-entry-schema";
+import { prototypeOperationalCredentials } from "./prototype-operational-credentials";
 
 export const ACCOUNT_ENTRY_FAILURE_MESSAGE =
   "We could not enter that account. Check the username and password and try again.";
-
-const seededOperationalCredentials = Object.freeze([
-  {
-    accountId: "account-admin-001",
-    username: "AdminLance",
-    password: "Lance888!",
-  },
-  {
-    accountId: "account-vendor-001",
-    username: "Vendor1",
-    password: "Vendor1",
-  },
-]);
 
 export class AccountEntryFailedError extends Error {
   public readonly code = "ACCOUNT_ENTRY_FAILED";
@@ -82,7 +70,7 @@ export class AccountEntryService {
 
     return this.dependencies.transactionRunner.run(async (repositories) => {
       const credential =
-        seededOperationalCredentials.find(
+        prototypeOperationalCredentials.find(
           (candidate) =>
             candidate.username === parsedInput.username &&
             candidate.password === parsedInput.password,
