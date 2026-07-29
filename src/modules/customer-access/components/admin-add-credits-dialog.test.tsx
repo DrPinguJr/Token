@@ -151,7 +151,9 @@ describe("AdminAddCreditsDialog", () => {
     );
   });
 
-  it("offers separate camera and upload inputs", () => {
+  it("opens camera capture separately from the upload input", async () => {
+    const user = userEvent.setup();
+
     render(
       <AdminAddCreditsDialog
         customerId="customer-1"
@@ -162,12 +164,13 @@ describe("AdminAddCreditsDialog", () => {
       />,
     );
 
-    expect(screen.getByText("Take photo")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Take photo" }));
+
+    expect(screen.getByText("Camera unavailable")).toBeVisible();
     expect(screen.getByText("Upload image")).toBeVisible();
-    expect(screen.getByLabelText("Take evidence photo")).toHaveAttribute(
-      "capture",
-      "environment",
-    );
+    expect(
+      screen.queryByLabelText("Take evidence photo"),
+    ).not.toBeInTheDocument();
     expect(screen.getByLabelText("Upload evidence image")).not.toHaveAttribute(
       "capture",
     );

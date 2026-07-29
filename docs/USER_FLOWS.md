@@ -172,8 +172,10 @@ Duplicate idempotency, over-refund, invalid amount, insufficient vendor balance,
 2. They choose **Add credits**, which opens a two-step modal.
 3. Step 1 provides separate **Take photo** and **Upload image** controls for a
    HEIC, HEIF, JPEG, PNG, or WebP image of the PayNow confirmation or cash
-   received and records the manual payment method. The image is limited to 10
-   MB, and a valid selection advances directly to the amount step.
+   received and records the manual payment method. **Take photo** opens an
+   in-app camera preview and captures a JPEG frame; **Upload image** keeps the
+   file-picker fallback. The image is limited to 10 MB, and a valid selection
+   advances directly to the amount step.
 4. The screen states that the image is manual evidence and does not mean
    Tokenly verified the payment.
 5. Step 2 requires a positive amount and displays the fixed prototype rate:

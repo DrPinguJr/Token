@@ -1295,7 +1295,6 @@ export async function refreshSupabaseClaimQr(
 export async function claimSupabaseTokener(
   claimCode: string,
 ): Promise<SupabaseClaimResult> {
-  await ensureSupabaseBaseline();
   const supabase = createSupabaseServerClient();
   const customerResult = await supabase
     .from("customers")
@@ -1354,7 +1353,6 @@ export async function claimSupabaseTokener(
 export async function getSupabasePrivateAccount(
   privateAccessCode: string,
 ): Promise<SupabasePrivateAccount> {
-  await ensureSupabaseBaseline();
   const supabase = createSupabaseServerClient();
   const customerResult = await supabase
     .from("customers")
@@ -1406,7 +1404,6 @@ export async function getSupabasePrivateAccount(
 export async function regenerateSupabaseWalletQr(
   privateAccessCode: string,
 ): Promise<SupabasePrivateAccount> {
-  await ensureSupabaseBaseline();
   const supabase = createSupabaseServerClient();
   const now = new Date().toISOString();
   const updated = await supabase

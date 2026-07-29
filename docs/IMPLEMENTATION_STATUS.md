@@ -191,10 +191,10 @@ A private Supabase Storage bucket and atomic database function record evidence
 metadata and its audit before appending the token issuance, ledger credit, and
 issuance audit. Evidence bytes remain outside audit metadata.
 
-The add-credits evidence controls now use explicit buttons that trigger hidden
-file inputs. **Take photo** targets the environment camera on mobile browsers
-with image capture support, while **Upload image** keeps the normal file-picker
-path.
+The add-credits evidence controls now separate true camera capture from upload.
+**Take photo** opens an in-app camera preview through `getUserMedia` and
+captures the current frame as a JPEG evidence file; **Upload image** remains the
+file-picker fallback for saved screenshots.
 
 The deployed-prototype credit rule is now fixed at **S$1.00 = 1 token**. The
 amount step previews the exact result before confirmation, including fractional
@@ -264,6 +264,11 @@ Supabase baseline repair now preserves only the hosted event, admin account,
 event settings, and vendor login/booth records. It no longer creates a default
 customer when the customer table is empty, so a reset database can remain clean
 until an administrator creates the first tokener.
+
+Claim QR redemption, private account loading, and wallet QR regeneration now
+skip Supabase baseline repair entirely and query the target customer record
+directly. This removes the vendor-account upsert loop from the customer opening
+path while preserving the same access checks and wallet balance calculation.
 
 The `/enter` surface now uses the earlier publicly listed Big Blue Floorball
 image from the official site instead of generated local raster art. The mobile
@@ -430,6 +435,8 @@ cut off before the login form.
 | Supabase demo reset backup | Passed, 2026-07-30 | A JSON snapshot of public Supabase tables was written outside the repository to `C:\Tokenly-db-backups` before reset. The CLI SQL dump path was unavailable because Docker Desktop is not installed. |
 | Supabase demo reset | Passed, 2026-07-30 | Removed 6 private payment-evidence storage objects, cleared hosted customers, token issuances, ledger entries, audit logs, evidence, orders, refunds, and settlements, and preserved 1 `AdminLance` account plus 13 vendor accounts, 13 vendor rows, and 13 vendor wallets. |
 | Clean database API smoke | Passed, 2026-07-30 | Local admin API smoke returned 0 tokeners, 0 credit issuances, 0 transaction groups, 6 game booth summaries, and 6 food booth summaries. Follow-up counts confirmed customers, token issuances, ledger entries, audit logs, and evidence stayed at zero. |
+| Add-credit camera focused test | Passed, 2026-07-30 | Focused add-credits dialog tests passed after replacing file-input camera capture with the in-app camera preview and keeping upload as a separate fallback. |
+| Claim/private account speed smoke | Passed, 2026-07-30 | Localhost missing-claim and missing-private-link API requests completed without running Supabase baseline repair; warm private-link misses returned in about 160-173 ms and claim misses in about 323 ms. |
 
 Replace “Not run/recorded” with the date, command, outcome, and concise failure limitation when a check is actually executed.
 

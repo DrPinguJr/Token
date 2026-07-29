@@ -64,16 +64,19 @@ export function AdminAddCreditsDialog({
   submitCredits,
 }: AdminAddCreditsDialogProps) {
   const titleId = useId();
-  const cameraInputId = useId();
   const uploadInputId = useId();
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "paynow">(
     "paynow",
   );
   const [evidence, setEvidence] = useState<File | null>(null);
   const [evidencePreview, setEvidencePreview] = useState<string | null>(null);
+  const [cameraState, setCameraState] = useState<
+    "closed" | "error" | "ready" | "starting"
+  >("closed");
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -81,16 +84,32 @@ export function AdminAddCreditsDialog({
   const tokenAmount =
     amountCents === null ? 0 : calculateOneToOneTokenAmount(amountCents);
 
+  function stopCamera(): void {
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
+
+    if (videoRef.current !== null) {
+      videoRef.current.srcObject = null;
+    }
+
+    setCameraState("closed");
+  }
+
+  function closeDialog(): void {
+    stopCamera();
+    onClose();
+  }
+
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent): void {
       if (event.key === "Escape" && !isSaving) {
-        onClose();
+        closeDialog();
       }
     }
 
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [isSaving, onClose]);
+  });
 
   useEffect(
     () => () => {
@@ -104,13 +123,40 @@ export function AdminAddCreditsDialog({
     [evidencePreview],
   );
 
-  function selectEvidence(event: ChangeEvent<HTMLInputElement>): void {
-    const selectedFile = event.target.files?.[0] ?? null;
+  useEffect(
+    () => () => {
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (cameraState !== "ready" || videoRef.current === null) {
+      return;
+    }
+
+    videoRef.current.srcObject = cameraStreamRef.current;
+    void videoRef.current.play().catch(() => {
+      setCameraState("error");
+      setMessage("Camera preview could not start. Try opening camera again.");
+    });
+  }, [cameraState]);
+
+  function setEvidenceFile(selectedFile: File | null): void {
     setMessage(null);
 
     if (selectedFile === null) {
       setEvidence(null);
-      setEvidencePreview(null);
+      setEvidencePreview((currentPreview) => {
+        if (
+          currentPreview !== null &&
+          typeof URL.revokeObjectURL === "function"
+        ) {
+          URL.revokeObjectURL(currentPreview);
+        }
+
+        return null;
+      });
       return;
     }
 
@@ -118,7 +164,6 @@ export function AdminAddCreditsDialog({
       setEvidence(null);
       setEvidencePreview(null);
       setMessage("Use a HEIC, HEIF, JPEG, PNG, or WebP image.");
-      event.target.value = "";
       return;
     }
 
@@ -126,18 +171,87 @@ export function AdminAddCreditsDialog({
       setEvidence(null);
       setEvidencePreview(null);
       setMessage("The evidence image must be 10 MB or smaller.");
-      event.target.value = "";
       return;
     }
 
     setEvidence(selectedFile);
-    setEvidencePreview(
-      typeof URL.createObjectURL === "function"
+    setEvidencePreview((currentPreview) => {
+      if (
+        currentPreview !== null &&
+        typeof URL.revokeObjectURL === "function"
+      ) {
+        URL.revokeObjectURL(currentPreview);
+      }
+
+      return typeof URL.createObjectURL === "function"
         ? URL.createObjectURL(selectedFile)
-        : null,
-    );
+        : null;
+    });
     setMessage(null);
+    stopCamera();
     setStep(2);
+  }
+
+  function selectEvidence(event: ChangeEvent<HTMLInputElement>): void {
+    setEvidenceFile(event.target.files?.[0] ?? null);
+    event.target.value = "";
+  }
+
+  async function openCamera(): Promise<void> {
+    setMessage(null);
+
+    if (navigator.mediaDevices?.getUserMedia === undefined) {
+      setCameraState("error");
+      setMessage(
+        "Camera capture is unavailable in this browser. Open Tokenly on HTTPS with camera permission, or use Upload image.",
+      );
+      return;
+    }
+
+    stopCamera();
+    setCameraState("starting");
+
+    try {
+      cameraStreamRef.current = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: "environment" } },
+      });
+      setCameraState("ready");
+    } catch {
+      cameraStreamRef.current = null;
+      setCameraState("error");
+      setMessage(
+        "Camera could not open. Allow camera permission, then try again.",
+      );
+    }
+  }
+
+  async function captureCameraPhoto(): Promise<void> {
+    const video = videoRef.current;
+    if (video === null || video.videoWidth === 0 || video.videoHeight === 0) {
+      setMessage("Camera is still starting. Try again in a moment.");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.9),
+    );
+
+    if (blob === null) {
+      setMessage("Photo could not be captured. Try again.");
+      return;
+    }
+
+    setEvidenceFile(
+      new File([blob], `payment-evidence-${Date.now()}.jpg`, {
+        type: "image/jpeg",
+      }),
+    );
   }
 
   function continueToAmount(): void {
@@ -189,7 +303,7 @@ export function AdminAddCreditsDialog({
       className="fixed inset-0 z-50 grid items-end bg-ink/55 p-0 backdrop-blur-sm sm:place-items-center sm:p-5"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target && !isSaving) {
-          onClose();
+          closeDialog();
         }
       }}
     >
@@ -212,7 +326,7 @@ export function AdminAddCreditsDialog({
             type="button"
             aria-label="Close add credits"
             disabled={isSaving}
-            onClick={onClose}
+            onClick={closeDialog}
             className="grid size-11 shrink-0 place-items-center rounded-full bg-canvas text-ink disabled:cursor-wait"
           >
             <X aria-hidden="true" className="size-5" />
@@ -299,7 +413,7 @@ export function AdminAddCreditsDialog({
             <div className="mt-3 grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={() => void openCamera()}
                 className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 font-semibold text-white shadow-raised"
               >
                 <Camera aria-hidden="true" className="size-5" />
@@ -314,16 +428,6 @@ export function AdminAddCreditsDialog({
                 Upload image
               </button>
               <input
-                id={cameraInputId}
-                ref={cameraInputRef}
-                type="file"
-                aria-label="Take evidence photo"
-                accept="image/heic,image/heif,image/jpeg,image/png,image/webp"
-                capture="environment"
-                onChange={selectEvidence}
-                className="sr-only"
-              />
-              <input
                 id={uploadInputId}
                 ref={uploadInputRef}
                 type="file"
@@ -333,6 +437,57 @@ export function AdminAddCreditsDialog({
                 className="sr-only"
               />
             </div>
+
+            {cameraState !== "closed" && (
+              <section className="mt-4 rounded-3xl bg-ink p-3 text-white shadow-raised">
+                {cameraState === "starting" ? (
+                  <p role="status" className="px-3 py-10 text-center">
+                    Opening camera...
+                  </p>
+                ) : cameraState === "error" ? (
+                  <div className="px-3 py-5 text-center">
+                    <p className="font-bold">Camera unavailable</p>
+                    <p className="mt-2 text-sm text-white/72">
+                      Allow camera permission and make sure Tokenly is opened on
+                      HTTPS, then try again.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void openCamera()}
+                      className="mt-4 min-h-11 rounded-full bg-white px-4 py-2 font-bold text-ink"
+                    >
+                      Try camera again
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <video
+                      ref={videoRef}
+                      muted
+                      playsInline
+                      className="aspect-[4/3] w-full rounded-2xl bg-black object-cover"
+                    />
+                    <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void captureCameraPhoto()}
+                        disabled={cameraState !== "ready"}
+                        className="min-h-12 rounded-full bg-white px-4 py-3 font-bold text-ink disabled:cursor-wait disabled:opacity-60"
+                      >
+                        Capture photo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={stopCamera}
+                        className="min-h-12 rounded-full bg-white/12 px-4 py-3 font-bold text-white"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
 
             {evidence !== null && (
               <p className="mt-3 text-sm font-medium break-all text-ink-muted">
