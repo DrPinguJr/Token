@@ -24,13 +24,24 @@ These commands are the intended workflow. Consult `docs/IMPLEMENTATION_STATUS.md
 
 ## Environment
 
-Copy `.env.example` to `.env.local` only when you need to override a local default:
+Copy `.env.example` to `.env.local`:
 
 ```powershell
 Copy-Item .env.example .env.local
 ```
 
-The prototype requires no secret or external service key.
+The IndexedDB application slices require no external key. The Supabase-backed
+admin tokener, transaction, claim/private-account, evidence, and vendor wallet
+resolution routes require:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SECRET_KEY=your-server-secret
+```
+
+Never commit `.env.local` or expose `SUPABASE_SECRET_KEY` through a
+`NEXT_PUBLIC_` variable. Restart `npm run dev` after changing environment
+values because Next.js reads them at server startup.
 
 ```dotenv
 NEXT_PUBLIC_TOKENLY_ENABLE_DEV_TOOLS=false
@@ -38,7 +49,9 @@ NEXT_PUBLIC_TOKENLY_ENABLE_DEV_TOOLS=false
 
 Set the value to `true` only to expose the local role switcher, scan simulator, and reset/reseed controls. The flag is public browser configuration and is not an authorization mechanism.
 
-Do not add Supabase or Vercel variables during the local prototype phase.
+Do not add Vercel or other production deployment configuration during the
+local prototype phase. Supabase values are limited to the explicitly
+Supabase-backed prototype routes listed above.
 
 ## Seed accounts
 

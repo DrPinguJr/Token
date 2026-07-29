@@ -175,6 +175,24 @@ cookie established by the local `AdminLance` and `Vendor1` password entry flow.
 This is still prototype authentication, not Supabase Auth or production-grade
 authorization.
 
+The vendor customer-wallet scanner now renders its live camera surface while
+the scanner starts, keeps a visible preview and targeting frame active during
+scanning, and provides an explicit stop control and manual fallback. The admin
+tokener detail now exposes a two-step **Add credits** modal: manual PayNow/cash
+evidence is captured first through separate **Take photo** and **Upload image**
+controls, then the SGD amount is entered. A private Supabase Storage bucket and
+atomic database function record evidence metadata and its audit before
+appending the token issuance, ledger credit, and issuance audit. Evidence bytes
+remain outside audit metadata.
+
+The incremental administrator activity route `/admin/transactions` now loads
+ledger entries directly from the Supabase-backed API. It displays issued,
+spent, refunded, and distinct transaction-group metrics, a recent technical
+activity list, and a connected-empty state with zero metrics. Both the
+transactions and tokener screens distinguish missing Supabase configuration or
+prototype-session state from a genuine connected empty result; neither falls
+back to IndexedDB for hosted records.
+
 ## Validation record
 
 | Command/check                            | Result              | Notes                                                                                                                                                                                                                                                |
@@ -264,6 +282,18 @@ authorization.
 | `npm run typecheck`                      | Passed, 2026-07-29  | Repository-wide `tsc --noEmit` completed after the Supabase deployment-prototype QR/admin changes                                                                                                                                                    |
 | `npm run test`                           | Passed, 2026-07-29  | Repository-wide Vitest suite passed: 60 test files and 318 tests                                                                                                                                                                                     |
 | `npm run build`                          | Passed, 2026-07-29  | Next.js 16.2.12 production build completed with admin, customer-access, prototype-auth, and vendor dynamic API routes                                                                                                                                |
+| Camera/credit wizard focused tests       | Passed, 2026-07-29  | 7 focused Vitest tests passed for visible scanner startup/scan states and the evidence-first, amount-second add-credits modal                                                                                                                        |
+| `npm run format:check`                   | Passed, 2026-07-29  | Repository-wide Prettier check completed after the vendor camera preview and evidence-backed credit issuance changes                                                                                                                                 |
+| `npm run lint`                           | Passed, 2026-07-29  | Repository-wide ESLint completed without errors for the camera, modal, API, storage, and issuance changes                                                                                                                                            |
+| `npm run typecheck`                      | Passed, 2026-07-29  | Repository-wide `tsc --noEmit` completed without errors for the multipart evidence and atomic issuance path                                                                                                                                          |
+| `npm run test`                           | Passed, 2026-07-29  | Repository-wide Vitest suite passed: 61 test files and 321 tests                                                                                                                                                                                     |
+| `npm run build`                          | Passed, 2026-07-29  | Next.js 16.2.12 production build completed with the updated vendor dashboard and admin tokener credit API                                                                                                                                            |
+| Supabase localhost admin smoke           | Passed, 2026-07-29  | With `.env.local` loaded, prototype admin login returned HTTP 200, the hosted tokeners API returned 2 records, and the hosted transactions API returned an authenticated empty overview with zero groups                                             |
+| Admin transaction focused tests          | Passed, 2026-07-29  | 2 RTL tests passed for connected zero metrics/empty activity and recoverable missing-Supabase-configuration handling                                                                                                                                 |
+| `npm run lint`                           | Passed, 2026-07-29  | Repository-wide ESLint completed without errors after the Supabase admin transaction route and error-state changes                                                                                                                                   |
+| `npm run typecheck`                      | Passed, 2026-07-29  | Repository-wide `tsc --noEmit` completed without errors after adding the admin transaction read model and API                                                                                                                                        |
+| `npm run test`                           | Passed, 2026-07-29  | Repository-wide Vitest suite passed: 62 test files and 323 tests                                                                                                                                                                                     |
+| `npm run build`                          | Passed, 2026-07-29  | Next.js 16.2.12 production build completed with `/admin/transactions` and `/api/admin/transactions`                                                                                                                                                  |
 
 Replace “Not run/recorded” with the date, command, outcome, and concise failure limitation when a check is actually executed.
 
@@ -286,3 +316,8 @@ Implement Phase 5 customer home, wallet/history, account QR, vendor
 scan/directory/storefront, basket, PIN-confirmed purchase receipt, and event
 help. Use only capability-specific read/mutation boundaries; repository handles
 and PIN credentials remain private.
+
+Apply and smoke-test the pending
+`20260729143000_add_admin_credit_issuance.sql` migration against the connected
+Supabase prototype before treating remote evidence-backed credit issuance as
+available outside the local development build.

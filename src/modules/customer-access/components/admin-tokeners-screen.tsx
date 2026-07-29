@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   BadgePlus,
-  MinusCircle,
   PlusCircle,
   QrCode,
   RefreshCw,
@@ -16,14 +15,13 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { generateRouteQrCodeDataUrl } from "@/config/qr-code-image-generator";
 
 import type { AdminTokenerAccessSummary } from "../customer-access-read-model";
+import {
+  AdminAddCreditsDialog,
+  type AddCreditsInput,
+} from "./admin-add-credits-dialog";
 
 export interface AdminTokenersScreenProps {
-  readonly adjustTokenerTokens?: (input: {
-    readonly customerId: string;
-    readonly direction: "credit" | "debit";
-    readonly reason: string;
-    readonly tokenAmount: number;
-  }) => Promise<void>;
+  readonly addTokenerCredits?: (input: AddCreditsInput) => Promise<void>;
   readonly createTokener?: (input: {
     readonly displayName: string;
     readonly nric: string;
@@ -46,25 +44,20 @@ function formatClaimState(tokener: AdminTokenerAccessSummary): string {
 }
 
 function ClaimQrPanel({
-  adjustTokenerTokens,
+  addTokenerCredits,
   selectedTokener,
   onRefreshClaimQr,
   onReload,
 }: Readonly<{
-  adjustTokenerTokens?: AdminTokenersScreenProps["adjustTokenerTokens"];
+  addTokenerCredits?: AdminTokenersScreenProps["addTokenerCredits"];
   selectedTokener: AdminTokenerAccessSummary | null;
   onRefreshClaimQr?: (customerId: string) => Promise<void>;
   onReload: () => void;
 }>) {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [adjustDirection, setAdjustDirection] = useState<"credit" | "debit">(
-    "credit",
-  );
-  const [adjustAmount, setAdjustAmount] = useState("");
-  const [adjustReason, setAdjustReason] = useState("");
-  const [isAdjusting, setIsAdjusting] = useState(false);
-  const [adjustMessage, setAdjustMessage] = useState<string | null>(null);
+  const [creditsDialogIsOpen, setCreditsDialogIsOpen] = useState(false);
+  const [creditsMessage, setCreditsMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -118,49 +111,6 @@ function ClaimQrPanel({
       await onRefreshClaimQr(tokener.customerId);
     } finally {
       setIsRefreshing(false);
-    }
-  }
-
-  async function submitAdjustment(
-    event: FormEvent<HTMLFormElement>,
-  ): Promise<void> {
-    event.preventDefault();
-
-    if (adjustTokenerTokens === undefined) {
-      return;
-    }
-
-    const tokener = selectedTokener;
-    if (tokener === null) {
-      return;
-    }
-
-    const tokenAmount = Number(adjustAmount);
-    if (!Number.isSafeInteger(tokenAmount) || tokenAmount <= 0) {
-      setAdjustMessage("Enter a positive whole-token amount.");
-      return;
-    }
-
-    setAdjustMessage(null);
-    setIsAdjusting(true);
-
-    try {
-      await adjustTokenerTokens({
-        customerId: tokener.customerId,
-        direction: adjustDirection,
-        reason: adjustReason,
-        tokenAmount,
-      });
-      setAdjustAmount("");
-      setAdjustReason("");
-      setAdjustMessage("Token adjustment saved.");
-      onReload();
-    } catch {
-      setAdjustMessage(
-        "Token adjustment could not be saved. Check the amount and reason.",
-      );
-    } finally {
-      setIsAdjusting(false);
     }
   }
 
@@ -229,79 +179,56 @@ function ClaimQrPanel({
         </button>
       )}
 
-      {adjustTokenerTokens !== undefined && (
-        <form
-          className="mt-6 rounded-3xl bg-canvas-soft p-4"
-          onSubmit={(event) => void submitAdjustment(event)}
-        >
-          <h3 className="font-bold text-ink">Add or remove tokens</h3>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setAdjustDirection("credit")}
-              className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-bold ${
-                adjustDirection === "credit"
-                  ? "bg-brand-mint-strong text-white"
-                  : "bg-white text-ink"
-              }`}
-            >
-              <PlusCircle aria-hidden="true" className="size-4" />
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={() => setAdjustDirection("debit")}
-              className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-bold ${
-                adjustDirection === "debit"
-                  ? "bg-danger text-white"
-                  : "bg-white text-ink"
-              }`}
-            >
-              <MinusCircle aria-hidden="true" className="size-4" />
-              Remove
-            </button>
-          </div>
-          <label className="mt-4 block">
-            <span className="text-sm font-semibold text-ink">Tokens</span>
-            <input
-              inputMode="numeric"
-              value={adjustAmount}
-              onChange={(event) => setAdjustAmount(event.target.value)}
-              className="mt-2 min-h-12 w-full rounded-2xl bg-white px-4 py-3 text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus"
-            />
-          </label>
-          <label className="mt-3 block">
-            <span className="text-sm font-semibold text-ink">Reason</span>
-            <input
-              value={adjustReason}
-              onChange={(event) => setAdjustReason(event.target.value)}
-              placeholder="Manual event desk correction"
-              className="mt-2 min-h-12 w-full rounded-2xl bg-white px-4 py-3 text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus"
-            />
-          </label>
+      {addTokenerCredits !== undefined && (
+        <div className="mt-6 rounded-3xl bg-canvas-soft p-4">
+          <h3 className="font-bold text-ink">Wallet credits</h3>
+          <p className="mt-2 text-sm leading-6 text-ink-muted">
+            Record payment evidence and the amount received before issuing
+            credits.
+          </p>
           <button
-            type="submit"
-            disabled={isAdjusting}
-            className="mt-4 min-h-12 w-full rounded-full bg-ink px-5 py-3 font-semibold text-white disabled:cursor-wait disabled:bg-ink-muted"
+            type="button"
+            onClick={() => {
+              setCreditsMessage(null);
+              setCreditsDialogIsOpen(true);
+            }}
+            className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-mint-strong px-5 py-3 font-semibold text-white shadow-raised"
           >
-            {isAdjusting ? "Saving..." : "Save token adjustment"}
+            <PlusCircle aria-hidden="true" className="size-5" />
+            Add credits
           </button>
-          {adjustMessage !== null && (
+          {creditsMessage !== null && (
             <p
               role="status"
               className="mt-3 text-sm font-medium text-ink-muted"
             >
-              {adjustMessage}
+              {creditsMessage}
             </p>
           )}
-        </form>
+        </div>
       )}
+
+      {creditsDialogIsOpen &&
+        addTokenerCredits !== undefined &&
+        selectedTokener !== null && (
+          <AdminAddCreditsDialog
+            customerId={selectedTokener.customerId}
+            customerName={selectedTokener.displayName}
+            submitCredits={addTokenerCredits}
+            onClose={() => setCreditsDialogIsOpen(false)}
+            onComplete={() => {
+              setCreditsDialogIsOpen(false);
+              setCreditsMessage("Credits issued and audit evidence recorded.");
+              onReload();
+            }}
+          />
+        )}
     </aside>
   );
 }
 
 export function AdminTokenersScreen({
-  adjustTokenerTokens,
+  addTokenerCredits,
   createTokener,
   loadTokeners,
   refreshClaimQr,
@@ -311,6 +238,7 @@ export function AdminTokenersScreen({
     readonly AdminTokenerAccessSummary[] | null
   >(null);
   const [hasError, setHasError] = useState(false);
+  const [loadErrorCode, setLoadErrorCode] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(
     selectedCustomerId ?? null,
@@ -327,6 +255,7 @@ export function AdminTokenersScreen({
     void Promise.resolve().then(() => {
       if (active) {
         setHasError(false);
+        setLoadErrorCode(null);
         setTokeners(null);
       }
     });
@@ -339,9 +268,12 @@ export function AdminTokenersScreen({
           );
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (active) {
           setHasError(true);
+          setLoadErrorCode(
+            error instanceof Error ? error.message : "TOKENLY_API_ERROR",
+          );
         }
       });
 
@@ -369,7 +301,11 @@ export function AdminTokenersScreen({
       <section className="rounded-card bg-white p-6 text-center shadow-soft">
         <h1 className="text-2xl font-bold text-ink">Tokeners could not load</h1>
         <p role="alert" className="mt-3 text-ink-muted">
-          Local prototype tokener records are unavailable.
+          {loadErrorCode === "SUPABASE_SERVER_CONFIGURATION_ERROR"
+            ? "Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY to .env.local, then restart the development server."
+            : loadErrorCode === "PROTOTYPE_SESSION_ROLE_UNAVAILABLE"
+              ? "Your hosted admin session is missing or expired. Sign out, then sign in as AdminLance again."
+              : "Supabase tokener records are unavailable. Check the server connection and try again."}
         </p>
         <button
           type="button"
@@ -566,7 +502,7 @@ export function AdminTokenersScreen({
 
       <div className="mt-7 lg:mt-0">
         <ClaimQrPanel
-          adjustTokenerTokens={adjustTokenerTokens}
+          addTokenerCredits={addTokenerCredits}
           selectedTokener={selectedTokener}
           onRefreshClaimQr={refreshSelectedClaimQr}
           onReload={() => setReloadVersion((current) => current + 1)}

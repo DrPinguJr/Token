@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 
 import {
-  adjustRemoteTokenerTokens,
+  addRemoteTokenerCredits,
   createRemoteTokener,
   loadRemoteTokeners,
   refreshRemoteClaimQr,
@@ -19,7 +19,7 @@ export function AdminTokenersRoute({
 
   return (
     <AdminTokenersScreen
-      adjustTokenerTokens={adjustRemoteTokenerTokens}
+      addTokenerCredits={addRemoteTokenerCredits}
       createTokener={createRemoteTokener}
       loadTokeners={loadRemoteTokeners}
       refreshClaimQr={refreshClaimQr}

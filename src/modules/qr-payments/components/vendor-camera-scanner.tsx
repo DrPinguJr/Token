@@ -128,7 +128,9 @@ export function VendorCameraScanner({
   }
 
   const cameraIsVisible =
-    cameraState === "active" || cameraState === "processing";
+    cameraState === "requesting" ||
+    cameraState === "active" ||
+    cameraState === "processing";
 
   return (
     <section
@@ -159,10 +161,11 @@ export function VendorCameraScanner({
       >
         <video
           ref={videoRef}
+          autoPlay
           muted
           playsInline
           aria-label="Vendor QR camera preview"
-          className="aspect-square w-full object-cover sm:aspect-video"
+          className="aspect-square min-h-72 w-full object-cover sm:aspect-video"
         />
       </div>
 

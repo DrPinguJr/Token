@@ -9,6 +9,10 @@ import {
   parseTokenlyQrPayload,
 } from "@/modules/qr-payments";
 import type { CustomerTransactionListItem } from "@/modules/customer-application";
+import type {
+  AdminTransactionListItem,
+  AdminTransactionOverview,
+} from "@/modules/admin-application";
 
 import { createSupabaseServerClient } from "./supabase-server-client";
 
@@ -40,6 +44,14 @@ export const supabaseTokenAdjustmentSchema = z
   })
   .strict();
 
+export const supabaseCreditIssuanceSchema = z
+  .object({
+    amountCents: z.coerce.number().int().positive().safe(),
+    customerId: z.string().uuid(),
+    paymentMethod: z.enum(["cash", "paynow"]),
+  })
+  .strict();
+
 export type CreateSupabaseTokenerInput = z.infer<
   typeof createSupabaseTokenerSchema
 >;
@@ -47,6 +59,12 @@ export type CreateSupabaseTokenerInput = z.infer<
 export type SupabaseTokenAdjustmentInput = z.infer<
   typeof supabaseTokenAdjustmentSchema
 >;
+
+export interface SupabaseCreditIssuanceInput extends z.infer<
+  typeof supabaseCreditIssuanceSchema
+> {
+  readonly evidence: File;
+}
 
 export interface SupabaseTokenerSummary {
   readonly balance: number;
@@ -155,6 +173,27 @@ const ledgerEntryRowSchema = z
     transaction_group_id: z.string().uuid(),
   })
   .passthrough();
+
+const adminLedgerEntryRowSchema = z
+  .object({
+    description: z.string(),
+    direction: z.enum(["credit", "debit"]),
+    entry_type: z.enum([
+      "administrative_adjustment",
+      "customer_purchase",
+      "customer_refund",
+      "token_issuance",
+      "vendor_receipt",
+      "vendor_refund",
+      "vendor_settlement",
+    ]),
+    id: z.string().uuid(),
+    occurred_at: z.string(),
+    reference: z.string(),
+    token_amount: z.number().int().positive(),
+    transaction_group_id: z.string().uuid(),
+  })
+  .strict();
 
 function assertNoSupabaseError(error: { readonly message?: string } | null) {
   if (error !== null) {
@@ -491,6 +530,57 @@ export async function listSupabaseTokeners(): Promise<
   );
 }
 
+export async function getSupabaseAdminTransactionOverview(): Promise<AdminTransactionOverview> {
+  const { eventId } = await ensureSupabaseBaseline();
+  const supabase = createSupabaseServerClient();
+  const result = await supabase
+    .from("ledger_entries")
+    .select(
+      "id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at",
+    )
+    .eq("event_id", eventId)
+    .order("occurred_at", { ascending: false });
+
+  assertNoSupabaseError(result.error);
+  const rows = z.array(adminLedgerEntryRowSchema).parse(result.data);
+  const transactions: readonly AdminTransactionListItem[] = rows.map((row) => ({
+    description: row.description,
+    direction: row.direction,
+    entryType: row.entry_type,
+    id: row.id,
+    occurredAt: row.occurred_at,
+    reference: row.reference,
+    tokenAmount: row.token_amount,
+    transactionGroupId: row.transaction_group_id,
+  }));
+
+  return {
+    metrics: {
+      issuedTokens: rows
+        .filter(
+          (row) =>
+            row.entry_type === "token_issuance" && row.direction === "credit",
+        )
+        .reduce((total, row) => total + row.token_amount, 0),
+      refundedTokens: rows
+        .filter(
+          (row) =>
+            row.entry_type === "customer_refund" && row.direction === "credit",
+        )
+        .reduce((total, row) => total + row.token_amount, 0),
+      spentTokens: rows
+        .filter(
+          (row) =>
+            row.entry_type === "customer_purchase" && row.direction === "debit",
+        )
+        .reduce((total, row) => total + row.token_amount, 0),
+      transactionGroups: new Set(rows.map((row) => row.transaction_group_id))
+        .size,
+    },
+    transactions,
+  };
+}
+
 export async function createSupabaseTokener(
   input: CreateSupabaseTokenerInput,
 ): Promise<SupabaseTokenerSummary> {
@@ -792,6 +882,87 @@ export async function createSupabaseTokenAdjustment(
     transaction_group_id: transactionGroupId,
   });
   assertNoSupabaseError(audit.error);
+
+  return toSummary(customer);
+}
+
+export async function createSupabaseCreditIssuance(
+  input: SupabaseCreditIssuanceInput,
+): Promise<SupabaseTokenerSummary> {
+  const parsed = supabaseCreditIssuanceSchema.parse(input);
+  const supportedEvidenceTypes = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ]);
+
+  if (
+    !supportedEvidenceTypes.has(input.evidence.type) ||
+    input.evidence.size <= 0 ||
+    input.evidence.size > 5 * 1024 * 1024
+  ) {
+    throw new SupabaseTokenlyAccessError(
+      "INVALID_INPUT",
+      "Use a JPEG, PNG, or WebP evidence image up to 5 MB.",
+    );
+  }
+
+  const { adminAccountId } = await ensureSupabaseBaseline();
+  const supabase = createSupabaseServerClient();
+  const customerResult = await supabase
+    .from("customers")
+    .select(
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+    )
+    .eq("id", parsed.customerId)
+    .single();
+
+  assertNoSupabaseError(customerResult.error);
+  const customer = customerRowSchema.parse(customerResult.data);
+  const evidenceId = randomUUID();
+  const issuanceId = randomUUID();
+  const ledgerEntryId = randomUUID();
+  const transactionGroupId = randomUUID();
+  const now = new Date().toISOString();
+  const reference = `ISS-${Date.now()}-${issuanceId.slice(0, 8)}`;
+  const idempotencyKey = `admin-credit-issuance:${issuanceId}`;
+  const storagePath = `${customer.id}/${evidenceId}`;
+
+  const upload = await supabase.storage
+    .from("payment-evidence")
+    .upload(storagePath, await input.evidence.arrayBuffer(), {
+      cacheControl: "3600",
+      contentType: input.evidence.type,
+      upsert: false,
+    });
+
+  assertNoSupabaseError(upload.error);
+
+  const issuance = await supabase.rpc("admin_issue_customer_credits", {
+    p_actor_account_id: adminAccountId,
+    p_amount_cents: parsed.amountCents,
+    p_customer_id: parsed.customerId,
+    p_evidence_file_name: input.evidence.name.slice(0, 255),
+    p_evidence_id: evidenceId,
+    p_evidence_mime_type: input.evidence.type,
+    p_evidence_size_bytes: input.evidence.size,
+    p_evidence_storage_path: storagePath,
+    p_idempotency_key: idempotencyKey,
+    p_issuance_id: issuanceId,
+    p_ledger_entry_id: ledgerEntryId,
+    p_occurred_at: now,
+    p_payment_method: parsed.paymentMethod,
+    p_reference: reference,
+    p_transaction_group_id: transactionGroupId,
+  });
+
+  if (issuance.error !== null) {
+    await supabase.storage
+      .from("payment-evidence")
+      .remove([storagePath])
+      .catch(() => undefined);
+    assertNoSupabaseError(issuance.error);
+  }
 
   return toSummary(customer);
 }

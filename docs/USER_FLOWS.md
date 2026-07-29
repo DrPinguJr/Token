@@ -160,6 +160,29 @@ Duplicate idempotency, over-refund, invalid amount, insufficient vendor balance,
 6. One transaction appends the adjustment ledger entry and audit record.
 7. The balance is recalculated; no stored balance is assigned.
 
+## Administrator adds customer credits
+
+1. An administrator opens a customer profile from `/admin/tokeners`.
+2. They choose **Add credits**, which opens a two-step modal.
+3. Step 1 provides separate **Take photo** and **Upload image** controls for a
+   JPEG, PNG, or WebP image of the PayNow confirmation or cash received and
+   records the manual payment method. The image is limited to 5 MB.
+4. The screen states that the image is manual evidence and does not mean
+   Tokenly verified the payment.
+5. Step 2 requires a positive Singapore-dollar amount.
+6. The service reads the current event conversion rate and derives a positive
+   whole-token credit.
+7. The image is uploaded under an opaque private storage key. Image bytes are
+   never written into audit metadata.
+8. One database transaction records the evidence row and evidence audit first,
+   then appends the issuance, customer ledger credit, and issuance audit.
+9. If the database transaction fails, the uploaded object is removed and no
+   wallet credit is reported as complete.
+10. The refreshed tokener profile shows the ledger-derived balance.
+
+This is a manually recorded payment flow. It does not verify PayNow, cash, or
+customer identity.
+
 ## Administrator transaction trace
 
 1. Administrator searches or filters transactions.
@@ -179,14 +202,23 @@ Duplicate idempotency, over-refund, invalid amount, insufficient vendor balance,
 
 Filtered CSV exports use the same query/filter semantics and safe, technical field labels.
 
+The current incremental administrator activity page at `/admin/transactions`
+loads ledger entries from Supabase. Before detailed trace relationships exist,
+it shows issued, spent, refunded, and transaction-group metrics. A connected
+database with no ledger entries displays zero metrics and an explicit empty
+state rather than failing or implying local IndexedDB data.
+
 ## Camera and scan fallback
 
 1. Scanner checks secure-context/browser support.
 2. Before permission, it explains why camera access is needed.
-3. On permission, it scans only expected Tokenly QR formats.
-4. Denied, unavailable, invalid, and timed-out states offer manual code entry.
-5. With development tools enabled, the simulator can choose a seeded customer or vendor.
-6. Every path resolves an opaque code through the same validated lookup.
+3. While the camera starts, the video surface is already rendered so mobile
+   browsers can establish playback.
+4. On permission, the scanner displays a live preview and targeting frame and
+   scans only expected Tokenly QR formats.
+5. Denied, unavailable, invalid, and timed-out states offer manual code entry.
+6. With development tools enabled, the simulator can choose a seeded customer or vendor.
+7. Every path resolves an opaque code through the same validated lookup.
 
 ## Development data reset and reseed
 

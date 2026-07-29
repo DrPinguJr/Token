@@ -93,7 +93,13 @@ export default function AdminLayout({
       roleLabel="Super-admin"
       accountName={accessDecision.session.account.displayName}
       homeHref="/admin"
-      pageTitle={pathname.startsWith("/admin/tokeners") ? "Tokeners" : "Admin"}
+      pageTitle={
+        pathname.startsWith("/admin/tokeners")
+          ? "Tokeners"
+          : pathname.startsWith("/admin/transactions")
+            ? "Activity"
+            : "Admin"
+      }
       actions={
         <button
           type="button"

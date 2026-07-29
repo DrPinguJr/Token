@@ -6,6 +6,7 @@ import {
   listSupabaseTokeners,
   SupabaseTokenlyAccessError,
 } from "@/config/supabase-tokenly-access";
+import { SupabaseServerConfigurationError } from "@/config/supabase-server-client";
 import {
   PrototypeSessionRoleError,
   requirePrototypeRole,
@@ -25,6 +26,16 @@ function errorResponse(error: unknown) {
     return NextResponse.json(
       { code: error.code, message: "Admin login is required." },
       { status: 401 },
+    );
+  }
+
+  if (error instanceof SupabaseServerConfigurationError) {
+    return NextResponse.json(
+      {
+        code: error.code,
+        message: "Supabase server configuration is unavailable.",
+      },
+      { status: 503 },
     );
   }
 

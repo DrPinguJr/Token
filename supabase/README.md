@@ -18,11 +18,14 @@ This directory now contains:
   relational schema migration for the current Tokenly data model.
 - `migrations/20260729101000_add_customer_nric.sql`: adds the admin-entered
   customer NRIC/FIN field used by the deployed tokener creation prototype.
+- `migrations/20260729143000_add_admin_credit_issuance.sql`: adds the private
+  payment-evidence bucket and atomic evidence-backed customer credit function.
 - `planned-schema.sql`: older non-executable planning material retained for
   design context.
 
-Both migrations have been pushed to the hosted Supabase project linked from this
-workspace. Future migration pushes still require a database migration
+The initial and NRIC migrations have been pushed to the hosted Supabase
+project. The evidence-backed credit migration remains pending until migration
+credentials are supplied. Migration pushes require a database migration
 credential such as `SUPABASE_ACCESS_TOKEN` plus database password, or a direct
 database URL. Publishable, anon, secret, and service-role API keys are not a
 substitute for a database migration credential.

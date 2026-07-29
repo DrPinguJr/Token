@@ -3,17 +3,24 @@ import type {
   ClaimedPrivateAccountReadModel,
   PrivateAccountReadModel,
 } from "@/modules/customer-access";
+import type { AdminTransactionOverview } from "@/modules/admin-application";
 
 interface TokenlyApiErrorBody {
   readonly code?: string;
   readonly message?: string;
 }
 
-class TokenlyApiError extends Error {
+export class TokenlyApiError extends Error {
   public constructor(public readonly code: string) {
     super(code);
     this.name = "TokenlyApiError";
   }
+}
+
+export async function loadRemoteAdminTransactions(): Promise<AdminTransactionOverview> {
+  return readJson<AdminTransactionOverview>(
+    await fetch("/api/admin/transactions", { cache: "no-store" }),
+  );
 }
 
 async function readJson<ResponseBody extends object>(
@@ -63,22 +70,22 @@ export async function refreshRemoteClaimQr(customerId: string): Promise<void> {
   );
 }
 
-export async function adjustRemoteTokenerTokens(input: {
+export async function addRemoteTokenerCredits(input: {
+  readonly amountCents: number;
   readonly customerId: string;
-  readonly direction: "credit" | "debit";
-  readonly reason: string;
-  readonly tokenAmount: number;
+  readonly evidence: File;
+  readonly paymentMethod: "cash" | "paynow";
 }): Promise<void> {
+  const body = new FormData();
+  body.set("amountCents", String(input.amountCents));
+  body.set("evidence", input.evidence);
+  body.set("paymentMethod", input.paymentMethod);
+
   await readJson(
     await fetch(
       `/api/admin/tokeners/${encodeURIComponent(input.customerId)}/tokens`,
       {
-        body: JSON.stringify({
-          direction: input.direction,
-          reason: input.reason,
-          tokenAmount: input.tokenAmount,
-        }),
-        headers: { "content-type": "application/json" },
+        body,
         method: "POST",
       },
     ),

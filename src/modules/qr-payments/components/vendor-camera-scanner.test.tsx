@@ -55,6 +55,7 @@ describe("VendorCameraScanner", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Allow camera" }));
+    expect(screen.getByLabelText("Vendor QR camera preview")).toBeVisible();
     expect(
       await screen.findByText(/point the camera at a Tokenly vendor QR/i),
     ).toBeVisible();

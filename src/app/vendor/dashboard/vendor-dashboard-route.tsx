@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, Code2, LogOut, ScanLine } from "lucide-react";
+import { Camera, Code2, LogOut, ScanLine, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
@@ -119,6 +119,12 @@ export function VendorDashboardRoute() {
     }
   }
 
+  async function stopCamera(): Promise<void> {
+    await sessionRef.current?.stop();
+    sessionRef.current = null;
+    setScanState("idle");
+  }
+
   function signOut(): void {
     runtime.signOut();
     void clearPrototypeSession();
@@ -179,27 +185,63 @@ export function VendorDashboardRoute() {
               </p>
             </div>
           </div>
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            className={`mt-5 aspect-square w-full rounded-3xl bg-ink object-cover ${
-              scanState === "active" ? "block" : "hidden"
+          <div
+            className={`relative mt-5 overflow-hidden rounded-3xl bg-ink ${
+              scanState === "starting" || scanState === "active"
+                ? "block"
+                : "hidden"
             }`}
-          />
-          <button
-            type="button"
-            onClick={() => void startCamera()}
-            disabled={scanState === "starting" || scanState === "active"}
-            className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-semibold text-white disabled:cursor-wait disabled:bg-ink-muted"
           >
-            <Camera aria-hidden="true" className="size-5" />
-            {scanState === "starting"
-              ? "Starting..."
-              : scanState === "active"
-                ? "Scanning..."
-                : "Start camera"}
-          </button>
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              aria-label="Customer QR camera preview"
+              className="aspect-square min-h-72 w-full object-cover sm:aspect-video"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-[12%] rounded-3xl border-2 border-white/90 shadow-[0_0_0_999px_rgba(10,22,37,0.28)]"
+            />
+            {scanState === "starting" && (
+              <p
+                role="status"
+                className="absolute inset-x-4 bottom-4 rounded-full bg-ink/80 px-4 py-2 text-center text-sm font-semibold text-white"
+              >
+                Starting camera preview...
+              </p>
+            )}
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3">
+            {scanState !== "active" ? (
+              <button
+                type="button"
+                onClick={() => void startCamera()}
+                disabled={scanState === "starting"}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-semibold text-white disabled:cursor-wait disabled:bg-ink-muted"
+              >
+                <Camera aria-hidden="true" className="size-5" />
+                {scanState === "starting"
+                  ? "Starting preview..."
+                  : "Start camera"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void stopCamera()}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-semibold text-white"
+              >
+                <Square aria-hidden="true" className="size-4 fill-current" />
+                Stop camera
+              </button>
+            )}
+          </div>
+          {scanState === "active" && (
+            <p role="status" className="mt-4 font-medium text-ink">
+              Live preview is on. Hold the customer QR inside the frame.
+            </p>
+          )}
         </section>
 
         <section className="mt-5 rounded-card bg-white p-5 shadow-soft">

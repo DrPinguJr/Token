@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
-  createSupabaseTokenAdjustment,
-  supabaseTokenAdjustmentSchema,
+  createSupabaseCreditIssuance,
+  supabaseCreditIssuanceSchema,
   SupabaseTokenlyAccessError,
 } from "@/config/supabase-tokenly-access";
 import {
@@ -22,13 +22,23 @@ export async function POST(
   try {
     requirePrototypeRole(request, "administrator");
     const { customerId } = paramsSchema.parse(await context.params);
-    const input = supabaseTokenAdjustmentSchema.parse({
-      ...(await request.json()),
+    const formData = await request.formData();
+    const evidence = formData.get("evidence");
+    if (!(evidence instanceof File)) {
+      throw new SupabaseTokenlyAccessError(
+        "INVALID_INPUT",
+        "Payment evidence is required.",
+      );
+    }
+
+    const input = supabaseCreditIssuanceSchema.parse({
+      amountCents: formData.get("amountCents"),
       customerId,
+      paymentMethod: formData.get("paymentMethod"),
     });
 
     return NextResponse.json({
-      tokener: await createSupabaseTokenAdjustment(input),
+      tokener: await createSupabaseCreditIssuance({ ...input, evidence }),
     });
   } catch (error: unknown) {
     if (error instanceof PrototypeSessionRoleError) {
@@ -42,8 +52,7 @@ export async function POST(
       return NextResponse.json(
         { code: error.code, message: error.message },
         {
-          status:
-            error.code === "TOKEN_ADJUSTMENT_OVERDRAWS_WALLET" ? 409 : 400,
+          status: 400,
         },
       );
     }
