@@ -260,6 +260,11 @@ lookup plus bulk customer, account, and ledger reads. Tokener creation uses the
 lightweight event lookup and returns the newly created read model from the
 inserted rows instead of reloading the account and ledger afterward.
 
+Supabase baseline repair now preserves only the hosted event, admin account,
+event settings, and vendor login/booth records. It no longer creates a default
+customer when the customer table is empty, so a reset database can remain clean
+until an administrator creates the first tokener.
+
 The `/enter` surface now uses the earlier publicly listed Big Blue Floorball
 image from the official site instead of generated local raster art. The mobile
 hero keeps the image full-width and centered so the photo is no longer visibly
@@ -421,6 +426,10 @@ cut off before the login form.
 | `npm run test` | Passed, 2026-07-30 | Repository-wide Vitest suite passed: 60 test files and 317 tests. |
 | `npm run build` | Passed, 2026-07-30 | Next.js 16.2.12 production build completed with the current admin reports, evidence controls, Supabase APIs, and `/enter` route. |
 | `npm run test:e2e` | Passed, 2026-07-30 | Playwright smoke passed on mobile, desktop, and tablet Chromium for the current `/` to `/enter` flow. |
+| Supabase migration sync | Passed, 2026-07-30 | `supabase migration list --linked` showed all six local migrations present remotely, and `supabase db push --linked` reported the remote database was up to date. |
+| Supabase demo reset backup | Passed, 2026-07-30 | A JSON snapshot of public Supabase tables was written outside the repository to `C:\Tokenly-db-backups` before reset. The CLI SQL dump path was unavailable because Docker Desktop is not installed. |
+| Supabase demo reset | Passed, 2026-07-30 | Removed 6 private payment-evidence storage objects, cleared hosted customers, token issuances, ledger entries, audit logs, evidence, orders, refunds, and settlements, and preserved 1 `AdminLance` account plus 13 vendor accounts, 13 vendor rows, and 13 vendor wallets. |
+| Clean database API smoke | Passed, 2026-07-30 | Local admin API smoke returned 0 tokeners, 0 credit issuances, 0 transaction groups, 6 game booth summaries, and 6 food booth summaries. Follow-up counts confirmed customers, token issuances, ledger entries, audit logs, and evidence stayed at zero. |
 
 Replace “Not run/recorded” with the date, command, outcome, and concise failure limitation when a check is actually executed.
 

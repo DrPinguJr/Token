@@ -622,53 +622,6 @@ async function ensureSupabaseBaseline(): Promise<{
     assertNoSupabaseError(vendorResult.error);
   }
 
-  const customerCount = await supabase
-    .from("customers")
-    .select("id", { count: "exact", head: true })
-    .eq("event_id", eventId);
-  assertNoSupabaseError(customerCount.error);
-
-  if ((customerCount.count ?? 0) === 0) {
-    const insertedCustomerAccount = await supabase
-      .from("account_profiles")
-      .insert({
-        display_name: "Lance Tan",
-        role: "customer",
-        status: "active",
-      })
-      .select("id, display_name, role, status")
-      .single();
-    assertNoSupabaseError(insertedCustomerAccount.error);
-
-    const customerAccountId = accountRowSchema.parse(
-      insertedCustomerAccount.data,
-    ).id;
-    const insertedCustomerWallet = await supabase
-      .from("wallets")
-      .insert({
-        event_id: eventId,
-        owner_account_id: customerAccountId,
-        owner_type: "customer",
-        status: "active",
-      })
-      .select("id")
-      .single();
-    assertNoSupabaseError(insertedCustomerWallet.error);
-
-    const now = new Date();
-    const customer = await supabase.from("customers").insert({
-      account_id: customerAccountId,
-      claim_code: generateCode("claim"),
-      claim_expires_at: addMinutes(now, claimExpiryMinutes),
-      event_id: eventId,
-      private_access_code: generateCode("priv"),
-      public_code: generateCode("cus"),
-      wallet_id: eventRowSchema.parse(insertedCustomerWallet.data).id,
-      wallet_qr_updated_at: now.toISOString(),
-    });
-    assertNoSupabaseError(customer.error);
-  }
-
   return { adminAccountId, eventId };
 }
 
