@@ -402,6 +402,7 @@ loading.
 | `npm run test:e2e:install` | Passed, 2026-07-29 | Installed the local Chromium browser binaries required by Playwright. The tablet project now explicitly uses Chromium instead of inheriting WebKit from the iPad device preset. |
 | `npm run test:e2e` | Passed, 2026-07-29 | Playwright smoke passed on mobile, desktop, and tablet Chromium for the current `/` to `/enter` flow. |
 | `/enter` visual smoke | Passed, 2026-07-29 | Playwright desktop and mobile screenshots confirmed the ready login state, local hero image rendering, readable form layout, and mobile fit. |
+| Hosted wallet balance hotfix | Passed, 2026-07-30 | Restored `wallet_id` to the shared Supabase ledger-entry select after local smoke found add-credit, private-account, and vendor wallet resolution responses were crashing after successful ledger writes. |
 
 Replace “Not run/recorded” with the date, command, outcome, and concise failure limitation when a check is actually executed.
 

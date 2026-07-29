@@ -662,7 +662,7 @@ async function loadEntriesForWallet(walletId: string) {
   const entries = await supabase
     .from("ledger_entries")
     .select(
-      "id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at, related_order_id",
+      "id, wallet_id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at, related_order_id",
     )
     .eq("wallet_id", walletId)
     .order("occurred_at", { ascending: false });
