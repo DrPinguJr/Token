@@ -11,6 +11,7 @@ import {
 import {
   useEffect,
   useId,
+  useRef,
   useState,
   type ChangeEvent,
   type FormEvent,
@@ -63,6 +64,10 @@ export function AdminAddCreditsDialog({
   submitCredits,
 }: AdminAddCreditsDialogProps) {
   const titleId = useId();
+  const cameraInputId = useId();
+  const uploadInputId = useId();
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "paynow">(
     "paynow",
@@ -292,29 +297,41 @@ export function AdminAddCreditsDialog({
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-3">
-              <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 font-semibold text-white shadow-raised">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 font-semibold text-white shadow-raised"
+              >
                 <Camera aria-hidden="true" className="size-5" />
                 Take photo
-                <input
-                  type="file"
-                  aria-label="Take evidence photo"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={selectEvidence}
-                  className="sr-only"
-                />
-              </label>
-              <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-4 py-3 font-semibold text-ink shadow-soft ring-1 ring-ink/10">
+              </button>
+              <button
+                type="button"
+                onClick={() => uploadInputRef.current?.click()}
+                className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-4 py-3 font-semibold text-ink shadow-soft ring-1 ring-ink/10"
+              >
                 <Upload aria-hidden="true" className="size-5" />
                 Upload image
-                <input
-                  type="file"
-                  aria-label="Upload evidence image"
-                  accept="image/heic,image/heif,image/jpeg,image/png,image/webp"
-                  onChange={selectEvidence}
-                  className="sr-only"
-                />
-              </label>
+              </button>
+              <input
+                id={cameraInputId}
+                ref={cameraInputRef}
+                type="file"
+                aria-label="Take evidence photo"
+                accept="image/heic,image/heif,image/jpeg,image/png,image/webp"
+                capture="environment"
+                onChange={selectEvidence}
+                className="sr-only"
+              />
+              <input
+                id={uploadInputId}
+                ref={uploadInputRef}
+                type="file"
+                aria-label="Upload evidence image"
+                accept="image/heic,image/heif,image/jpeg,image/png,image/webp"
+                onChange={selectEvidence}
+                className="sr-only"
+              />
             </div>
 
             {evidence !== null && (

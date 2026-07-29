@@ -10,6 +10,11 @@ import {
 } from "@/modules/qr-payments";
 import type { CustomerTransactionListItem } from "@/modules/customer-application";
 import type {
+  AdminBoothCategory,
+  AdminBoothReport,
+  AdminBoothSummary,
+  AdminBoothTransactionItem,
+  AdminCreditIssuanceReportItem,
   AdminTransactionListItem,
   AdminTransactionOverview,
 } from "@/modules/admin-application";
@@ -185,6 +190,10 @@ const accountRowSchema = z
   })
   .passthrough();
 
+const accountReportRowSchema = accountRowSchema.extend({
+  username: z.string().nullable().optional(),
+});
+
 const customerRowSchema = z
   .object({
     account_id: z.string().uuid(),
@@ -211,6 +220,16 @@ const walletRowSchema = z
 
 const vendorOverviewRowSchema = z
   .object({
+    display_name: z.string(),
+    id: z.string().uuid(),
+    stall_location: z.string(),
+    wallet_id: z.string().uuid(),
+  })
+  .passthrough();
+
+const adminVendorReportRowSchema = z
+  .object({
+    account_id: z.string().uuid(),
     display_name: z.string(),
     id: z.string().uuid(),
     stall_location: z.string(),
@@ -253,6 +272,38 @@ const adminLedgerEntryRowSchema = z
     transaction_group_id: z.string().uuid(),
   })
   .strict();
+
+const adminCustomerReportRowSchema = z
+  .object({
+    account_id: z.string().uuid(),
+    id: z.string().uuid(),
+    nric: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+const adminEvidenceReportRowSchema = z
+  .object({
+    file_name: z.string(),
+    id: z.string().uuid(),
+    metadata: z.unknown(),
+    mime_type: z.string(),
+    size_bytes: z.coerce.number().int().positive(),
+    storage_path: z.string(),
+  })
+  .passthrough();
+
+const adminTokenIssuanceReportRowSchema = z
+  .object({
+    created_at: z.string(),
+    customer_id: z.string().uuid(),
+    evidence_id: z.string().uuid(),
+    id: z.string().uuid(),
+    paynow_amount_cents: z.coerce.number().int().positive(),
+    reference: z.string(),
+    token_amount: fractionalTokenAmountSchema,
+    transaction_group_id: z.string().uuid(),
+  })
+  .passthrough();
 
 function assertNoSupabaseError(error: { readonly message?: string } | null) {
   if (error !== null) {
@@ -718,6 +769,295 @@ async function toSummary(
   };
 }
 
+function parseEvidencePaymentMethod(
+  metadata: unknown,
+): AdminCreditIssuanceReportItem["paymentMethod"] {
+  const parsed = z
+    .object({ paymentMethod: z.enum(["cash", "paynow"]).optional() })
+    .passthrough()
+    .safeParse(metadata);
+
+  return parsed.success ? (parsed.data.paymentMethod ?? "unknown") : "unknown";
+}
+
+async function buildEvidencePreviewUrl(
+  storagePath: string,
+): Promise<string | null> {
+  const supabase = createSupabaseServerClient();
+  const signedUrl = await supabase.storage
+    .from("payment-evidence")
+    .createSignedUrl(storagePath, 30 * 60);
+
+  return signedUrl.error === null ? signedUrl.data.signedUrl : null;
+}
+
+async function getSupabaseAdminCreditIssuanceReports(
+  eventId: string,
+): Promise<readonly AdminCreditIssuanceReportItem[]> {
+  const supabase = createSupabaseServerClient();
+  const issuancesResult = await supabase
+    .from("token_issuances")
+    .select(
+      "id, customer_id, evidence_id, paynow_amount_cents, token_amount, reference, transaction_group_id, created_at",
+    )
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false });
+
+  assertNoSupabaseError(issuancesResult.error);
+  const issuances = z
+    .array(adminTokenIssuanceReportRowSchema)
+    .parse(issuancesResult.data);
+
+  if (issuances.length === 0) {
+    return [];
+  }
+
+  const customerIds = [
+    ...new Set(issuances.map((issuance) => issuance.customer_id)),
+  ];
+  const evidenceIds = [
+    ...new Set(issuances.map((issuance) => issuance.evidence_id)),
+  ];
+  const [customersResult, evidenceResult] = await Promise.all([
+    supabase
+      .from("customers")
+      .select("id, account_id, nric")
+      .in("id", customerIds),
+    supabase
+      .from("evidence")
+      .select("id, storage_path, file_name, mime_type, size_bytes, metadata")
+      .in("id", evidenceIds),
+  ]);
+
+  assertNoSupabaseError(customersResult.error);
+  assertNoSupabaseError(evidenceResult.error);
+  const customers = z
+    .array(adminCustomerReportRowSchema)
+    .parse(customersResult.data);
+  const evidenceRows = z
+    .array(adminEvidenceReportRowSchema)
+    .parse(evidenceResult.data);
+  const accountsResult = await supabase
+    .from("account_profiles")
+    .select("id, display_name, role, status, username")
+    .in("id", [...new Set(customers.map((customer) => customer.account_id))]);
+
+  assertNoSupabaseError(accountsResult.error);
+  const customersById = new Map(
+    customers.map((customer) => [customer.id, customer]),
+  );
+  const evidenceById = new Map(
+    evidenceRows.map((evidence) => [evidence.id, evidence]),
+  );
+  const accountsById = new Map(
+    z
+      .array(accountReportRowSchema)
+      .parse(accountsResult.data)
+      .map((account) => [account.id, account]),
+  );
+  const previewUrlsByEvidenceId = new Map(
+    await Promise.all(
+      evidenceRows.map(
+        async (evidence) =>
+          [
+            evidence.id,
+            await buildEvidencePreviewUrl(evidence.storage_path),
+          ] as const,
+      ),
+    ),
+  );
+
+  return issuances.map((issuance) => {
+    const customer = customersById.get(issuance.customer_id);
+    const evidence = evidenceById.get(issuance.evidence_id);
+    const account =
+      customer === undefined
+        ? undefined
+        : accountsById.get(customer.account_id);
+
+    if (
+      customer === undefined ||
+      evidence === undefined ||
+      account === undefined
+    ) {
+      throw new SupabaseTokenlyAccessError(
+        "TOKENLY_SUPABASE_WRITE_FAILED",
+        "Tokenly Supabase operation failed.",
+      );
+    }
+
+    return {
+      createdAt: issuance.created_at,
+      customerId: customer.id,
+      customerName: account.display_name,
+      evidenceFileName: evidence.file_name,
+      evidenceMimeType: evidence.mime_type,
+      evidencePreviewUrl: previewUrlsByEvidenceId.get(evidence.id) ?? null,
+      evidenceStoragePath: evidence.storage_path,
+      id: issuance.id,
+      nric: customer.nric ?? null,
+      paymentMethod: parseEvidencePaymentMethod(evidence.metadata),
+      reference: issuance.reference,
+      sgdAmountCents: issuance.paynow_amount_cents,
+      tokenAmount: issuance.token_amount,
+      transactionGroupId: issuance.transaction_group_id,
+    } satisfies AdminCreditIssuanceReportItem;
+  });
+}
+
+function getVendorBoothCategory(
+  vendor: z.infer<typeof adminVendorReportRowSchema>,
+  username: string,
+): AdminBoothCategory | null {
+  const source = `${vendor.stall_location} ${username}`.toLocaleLowerCase(
+    "en-SG",
+  );
+
+  if (source.includes("food")) {
+    return "food";
+  }
+
+  if (source.includes("game")) {
+    return "games";
+  }
+
+  return null;
+}
+
+function getVendorBoothNumber(
+  vendor: z.infer<typeof adminVendorReportRowSchema>,
+): number | null {
+  const match = /booth\s*0?([1-6])\b/i.exec(vendor.stall_location);
+  return match === null ? null : Number(match[1]);
+}
+
+function toBoothSummary(
+  vendor: z.infer<typeof adminVendorReportRowSchema>,
+  username: string,
+  boothNumber: number,
+  entries: readonly z.infer<typeof ledgerEntryRowSchema>[],
+): AdminBoothSummary {
+  const creditedTokens = calculateBalance(
+    entries.filter((entry) => entry.direction === "credit"),
+  );
+  const debitedTokens = entries
+    .filter((entry) => entry.direction === "debit")
+    .reduce((total, entry) => total + entry.token_amount, 0);
+
+  return {
+    boothNumber,
+    creditedTokens,
+    debitedTokens,
+    netTokens: calculateBalance(entries),
+    stallLocation: vendor.stall_location,
+    transactionCount: entries.length,
+    vendorId: vendor.id,
+    vendorName: vendor.display_name,
+    vendorUsername: username,
+  };
+}
+
+async function getSupabaseAdminBoothReports(
+  eventId: string,
+): Promise<readonly AdminBoothReport[]> {
+  const supabase = createSupabaseServerClient();
+  const vendorsResult = await supabase
+    .from("vendors")
+    .select("id, account_id, wallet_id, display_name, stall_location")
+    .eq("event_id", eventId);
+
+  assertNoSupabaseError(vendorsResult.error);
+  const vendors = z.array(adminVendorReportRowSchema).parse(vendorsResult.data);
+  if (vendors.length === 0) {
+    return [
+      { category: "games", summaries: [], transactions: [] },
+      { category: "food", summaries: [], transactions: [] },
+    ];
+  }
+
+  const [accountsResult, entriesResult] = await Promise.all([
+    supabase
+      .from("account_profiles")
+      .select("id, display_name, role, status, username")
+      .in("id", [...new Set(vendors.map((vendor) => vendor.account_id))]),
+    supabase
+      .from("ledger_entries")
+      .select(
+        "id, wallet_id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at, related_order_id",
+      )
+      .in("wallet_id", [...new Set(vendors.map((vendor) => vendor.wallet_id))])
+      .order("occurred_at", { ascending: false }),
+  ]);
+
+  assertNoSupabaseError(accountsResult.error);
+  assertNoSupabaseError(entriesResult.error);
+  const accountsById = new Map(
+    z
+      .array(accountReportRowSchema)
+      .parse(accountsResult.data)
+      .map((account) => [account.id, account]),
+  );
+  const entriesByWalletId = new Map<
+    string,
+    z.infer<typeof ledgerEntryRowSchema>[]
+  >();
+
+  for (const entry of z.array(ledgerEntryRowSchema).parse(entriesResult.data)) {
+    const walletEntries = entriesByWalletId.get(entry.wallet_id) ?? [];
+    walletEntries.push(entry);
+    entriesByWalletId.set(entry.wallet_id, walletEntries);
+  }
+
+  return (["games", "food"] as const).map((category) => {
+    const summaries: AdminBoothSummary[] = [];
+    const transactions: AdminBoothTransactionItem[] = [];
+
+    for (const vendor of vendors) {
+      const account = accountsById.get(vendor.account_id);
+      const username = account?.username ?? "";
+      const boothCategory = getVendorBoothCategory(vendor, username);
+      const boothNumber = getVendorBoothNumber(vendor);
+
+      if (boothCategory !== category || boothNumber === null) {
+        continue;
+      }
+
+      const entries = entriesByWalletId.get(vendor.wallet_id) ?? [];
+      summaries.push(toBoothSummary(vendor, username, boothNumber, entries));
+      transactions.push(
+        ...entries.map((entry): AdminBoothTransactionItem => ({
+          boothNumber,
+          description: entry.description,
+          direction: entry.direction,
+          entryType: adminLedgerEntryRowSchema.shape.entry_type.parse(
+            entry.entry_type,
+          ),
+          id: entry.id,
+          occurredAt: entry.occurred_at,
+          reference: entry.reference,
+          stallLocation: vendor.stall_location,
+          tokenAmount: entry.token_amount,
+          transactionGroupId: entry.transaction_group_id,
+          vendorId: vendor.id,
+          vendorName: vendor.display_name,
+          vendorUsername: username,
+        })),
+      );
+    }
+
+    return {
+      category,
+      summaries: summaries.sort(
+        (left, right) => left.boothNumber - right.boothNumber,
+      ),
+      transactions: transactions.sort(
+        (left, right) =>
+          Date.parse(right.occurredAt) - Date.parse(left.occurredAt),
+      ),
+    } satisfies AdminBoothReport;
+  });
+}
+
 export async function listSupabaseTokeners(): Promise<
   readonly SupabaseTokenerSummary[]
 > {
@@ -810,6 +1150,10 @@ export async function getSupabaseAdminTransactionOverview(): Promise<AdminTransa
 
   assertNoSupabaseError(result.error);
   const rows = z.array(adminLedgerEntryRowSchema).parse(result.data);
+  const [creditIssuances, boothReports] = await Promise.all([
+    getSupabaseAdminCreditIssuanceReports(eventId),
+    getSupabaseAdminBoothReports(eventId),
+  ]);
   const transactions: readonly AdminTransactionListItem[] = rows.map((row) => ({
     description: row.description,
     direction: row.direction,
@@ -822,6 +1166,8 @@ export async function getSupabaseAdminTransactionOverview(): Promise<AdminTransa
   }));
 
   return {
+    boothReports,
+    creditIssuances,
     metrics: {
       issuedTokens: rows
         .filter(

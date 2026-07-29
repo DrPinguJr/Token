@@ -6,6 +6,11 @@ import type { AdminTransactionOverview } from "../admin-transaction-read-model";
 import { AdminTransactionsScreen } from "./admin-transactions-screen";
 
 const emptyOverview: AdminTransactionOverview = {
+  boothReports: [
+    { category: "games", summaries: [], transactions: [] },
+    { category: "food", summaries: [], transactions: [] },
+  ],
+  creditIssuances: [],
   metrics: {
     issuedTokens: 0,
     refundedTokens: 0,
@@ -24,7 +29,7 @@ describe("AdminTransactionsScreen", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "No transactions yet" }),
+      await screen.findByRole("heading", { name: "No credit issuances yet" }),
     ).toBeVisible();
     expect(screen.getAllByText("0")).toHaveLength(4);
     expect(screen.getByText(/Supabase is connected/i)).toBeVisible();
@@ -45,7 +50,7 @@ describe("AdminTransactionsScreen", () => {
 
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(
-      await screen.findByRole("heading", { name: "No transactions yet" }),
+      await screen.findByRole("heading", { name: "No credit issuances yet" }),
     ).toBeVisible();
     expect(loadOverview).toHaveBeenCalledTimes(2);
   });

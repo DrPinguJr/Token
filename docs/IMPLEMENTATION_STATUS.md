@@ -1,6 +1,6 @@
 # Tokenly Implementation Status
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 ## Summary
 
@@ -191,6 +191,11 @@ A private Supabase Storage bucket and atomic database function record evidence
 metadata and its audit before appending the token issuance, ledger credit, and
 issuance audit. Evidence bytes remain outside audit metadata.
 
+The add-credits evidence controls now use explicit buttons that trigger hidden
+file inputs. **Take photo** targets the environment camera on mobile browsers
+with image capture support, while **Upload image** keeps the normal file-picker
+path.
+
 The deployed-prototype credit rule is now fixed at **S$1.00 = 1 token**. The
 amount step previews the exact result before confirmation, including fractional
 credits such as S$0.50 to 0.5 token and S$12.50 to 12.5 tokens. Supabase stores
@@ -202,13 +207,17 @@ match that one-to-one calculation. Migrations
 `20260729161500_set_one_to_one_token_rate.sql` have been pushed to the hosted
 Supabase project.
 
-The incremental administrator activity route `/admin/transactions` now loads
-ledger entries directly from the Supabase-backed API. It displays issued,
-spent, refunded, and distinct transaction-group metrics, a recent technical
-activity list, and a connected-empty state with zero metrics. Both the
-transactions and tokener screens distinguish missing Supabase configuration or
-prototype-session state from a genuine connected empty result; neither falls
-back to IndexedDB for hosted records.
+The administrator activity route `/admin/transactions` now loads categorized
+Supabase-backed reports. The **Token issuance** report shows each credit
+issuance with customer name, NRIC, received amount, issued token amount,
+payment method, reference, and a signed Supabase Storage evidence-preview link.
+The **Game booths** and **Food booths** reports group hosted vendor ledger
+activity into booth summaries, include Booth 1-6 filters, show each selected
+booth's net/in/out token totals, and list the matching booth transactions. All
+three reports export CSV files that open cleanly in Google Sheets, with formula
+prefixes escaped. Both the transactions and tokener screens distinguish missing
+Supabase configuration or prototype-session state from a genuine connected
+empty result; neither falls back to IndexedDB for hosted records.
 
 The hosted prototype now includes 12 named vendor login credentials: six game
 stores and six food stores. Their Supabase account profiles, event role
@@ -251,11 +260,10 @@ lookup plus bulk customer, account, and ledger reads. Tokener creation uses the
 lightweight event lookup and returns the newly created read model from the
 inserted rows instead of reloading the account and ledger afterward.
 
-The `/enter` surface now uses local generated raster visuals under
-`public/brand/` instead of a remote front-page image dependency. The login hero
-shows a Big Blue-aligned floorball action scene with a second event-token booth
-picture on wider screens, both rendered through Next Image for responsive
-loading.
+The `/enter` surface now uses the earlier publicly listed Big Blue Floorball
+image from the official site instead of generated local raster art. The mobile
+hero keeps the image full-width and centered so the photo is no longer visibly
+cut off before the login form.
 
 ## Validation record
 
@@ -403,6 +411,16 @@ loading.
 | `npm run test:e2e` | Passed, 2026-07-29 | Playwright smoke passed on mobile, desktop, and tablet Chromium for the current `/` to `/enter` flow. |
 | `/enter` visual smoke | Passed, 2026-07-29 | Playwright desktop and mobile screenshots confirmed the ready login state, local hero image rendering, readable form layout, and mobile fit. |
 | Hosted wallet balance hotfix | Passed, 2026-07-30 | Restored `wallet_id` to the shared Supabase ledger-entry select after local smoke found add-credit, private-account, and vendor wallet resolution responses were crashing after successful ledger writes. |
+| Admin report API smoke | Passed, 2026-07-30 | With `.env.local` loaded, localhost admin login succeeded and `/api/admin/transactions` returned HTTP 200 with 6 credit issuances, 6 game-booth summaries, 3 game transactions, 6 food-booth summaries, and 0 food transactions from the hosted Supabase data. |
+| Entry/admin visual smoke | Passed, 2026-07-30 | Playwright mobile screenshots confirmed the restored public Big Blue `/enter` image framing and the `/admin/transactions` mobile report with visible customer name, NRIC, amount, payment method, reference, and evidence preview controls. |
+| Focused report and camera tests | Passed, 2026-07-30 | 15 focused Vitest tests passed for the admin transactions screen, add-credits dialog, and account-entry screen after the report, evidence-control, and entry-image changes. |
+| `npm run format` | Passed, 2026-07-30 | Repository Prettier write completed with no changed files after the admin report and entry image updates. |
+| `npm run format:check` | Passed, 2026-07-30 | Repository-wide Prettier check completed after the admin report and entry image updates. |
+| `npm run lint` | Passed, 2026-07-30 | Repository-wide ESLint completed without errors after the admin report and entry image updates. |
+| `npm run typecheck` | Passed, 2026-07-30 | Repository-wide `tsc --noEmit` completed without errors after the admin report and entry image updates. |
+| `npm run test` | Passed, 2026-07-30 | Repository-wide Vitest suite passed: 60 test files and 317 tests. |
+| `npm run build` | Passed, 2026-07-30 | Next.js 16.2.12 production build completed with the current admin reports, evidence controls, Supabase APIs, and `/enter` route. |
+| `npm run test:e2e` | Passed, 2026-07-30 | Playwright smoke passed on mobile, desktop, and tablet Chromium for the current `/` to `/enter` flow. |
 
 Replace “Not run/recorded” with the date, command, outcome, and concise failure limitation when a check is actually executed.
 

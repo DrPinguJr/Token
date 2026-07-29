@@ -1,5 +1,10 @@
 export type {
   AdminLedgerDirection,
+  AdminBoothCategory,
+  AdminBoothReport,
+  AdminBoothSummary,
+  AdminBoothTransactionItem,
+  AdminCreditIssuanceReportItem,
   AdminTransactionListItem,
   AdminTransactionMetrics,
   AdminTransactionOverview,
