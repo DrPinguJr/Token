@@ -49,6 +49,20 @@ export async function loadRemoteTokeners(): Promise<
   return body.tokeners;
 }
 
+export async function loadRemoteTokenerDetail(
+  customerId: string,
+): Promise<AdminTokenerAccessSummary> {
+  const body = await readJson<{
+    readonly tokener: AdminTokenerAccessSummary;
+  }>(
+    await fetch(`/api/admin/tokeners/${encodeURIComponent(customerId)}`, {
+      cache: "no-store",
+    }),
+  );
+
+  return body.tokener;
+}
+
 export async function createRemoteTokener(input: {
   readonly displayName: string;
   readonly nric: string;
@@ -90,6 +104,32 @@ export async function addRemoteTokenerCredits(input: {
       },
     ),
   );
+}
+
+export async function refundRemoteTokenerTransaction(input: {
+  readonly customerId: string;
+  readonly purchaseTransactionGroupId: string;
+  readonly reason: string;
+  readonly tokenAmount: number;
+}): Promise<AdminTokenerAccessSummary> {
+  const body = await readJson<{
+    readonly tokener: AdminTokenerAccessSummary;
+  }>(
+    await fetch(
+      `/api/admin/tokeners/${encodeURIComponent(input.customerId)}/refunds`,
+      {
+        body: JSON.stringify({
+          purchaseTransactionGroupId: input.purchaseTransactionGroupId,
+          reason: input.reason,
+          tokenAmount: input.tokenAmount,
+        }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      },
+    ),
+  );
+
+  return body.tokener;
 }
 
 export async function claimRemoteTokener(

@@ -1,6 +1,6 @@
 # Tokenly Implementation Status
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## Summary
 
@@ -80,8 +80,8 @@ local data semantics are now version `2`; version `1` data is preserved but
 rejected until an explicit development reset/reseed.
 
 Phase 3 also implements authoritative repository-price purchases, conserved
-customer/vendor ledger pairs, full and partial vendor refunds, reasoned
-administrator adjustments, and vendor settlement-period calculation. Every
+customer/vendor ledger pairs, full and partial administrator-recorded refunds,
+reasoned administrator adjustments, and vendor settlement-period calculation. Every
 value mutation rechecks actors, ownership, wallet relationships, current and
 projected balances, idempotency, and transaction-group availability inside one
 IndexedDB unit of work. Refunds reconcile prior refund records with their
@@ -235,35 +235,37 @@ smoke test issued S$12.50 to Lance Tan and the hosted tokener summary returned
 the updated 12.5-token balance with HTTP 200.
 
 The hosted vendor dashboard now opens a compact action sheet immediately after
-a customer wallet QR resolves. The vendor chooses **Add** or **Deduct**, enters
-the token amount, confirms, and gets a compact receipt. Deduct calls a Supabase
-RPC that appends paired customer `customer_purchase` debit and vendor
-`vendor_receipt` credit entries plus a `purchase_completed` audit record. Add
-calls a paired customer `customer_refund` credit and vendor `vendor_refund`
-debit function. The signed prototype cookie carries the vendor username so the
-correct hosted vendor account is adjusted.
+a customer wallet QR resolves. The vendor can only choose **Deduct**, enter the
+token amount, confirm, and get a compact receipt. Deduct calls a Supabase RPC
+that appends paired customer `customer_purchase` debit and vendor
+`vendor_receipt` credit entries plus a `purchase_completed` audit record. The
+signed prototype cookie carries the vendor username so the correct hosted vendor
+account is adjusted.
 
 The vendor dashboard also loads the signed-in vendor's hosted wallet balance
-and recent ledger changes from `/api/vendor/overview`. Vendor network actions
-now dim the screen with a centered loading indicator while lookup, save, or
-overview refresh work is in progress.
+and recent ledger changes from `/api/vendor/overview`. That endpoint now uses
+the `get_vendor_overview` database helper so Postgres returns the aggregate
+balance plus the 12 visible activity rows instead of sending every vendor ledger
+row to Node. Vendor network actions dim the screen with a centered loading
+indicator while lookup, save, or overview refresh work is in progress.
 
 The vendor scan/charge hot path no longer runs the Supabase baseline repair and
 vendor-account upsert loop on every request. Customer wallet resolution now
-performs only the QR/customer wallet lookup, while quick charge/return calls go
-straight to the database RPC and refresh the receipt before reloading the
-vendor activity panel.
+performs only the QR/customer wallet lookup, while quick charge calls go
+straight to the database RPC and refresh the receipt before reloading the vendor
+activity panel.
 
 Admin tokener listing no longer performs per-customer account and ledger
-queries or the full Supabase baseline repair. It now uses one lightweight event
-lookup plus bulk customer, account, and ledger reads. Tokener creation uses the
-lightweight event lookup and returns the newly created read model from the
-inserted rows instead of reloading the account and ledger afterward.
+queries or Supabase baseline repair. It now uses one lightweight event lookup
+plus bulk customer, account, and ledger reads, and opens transaction history on
+demand from the tokener popup. Tokener creation uses the lightweight event
+lookup and returns the newly created read model from the inserted rows instead
+of reloading the account and ledger afterward.
 
-Supabase baseline repair now preserves only the hosted event, admin account,
-event settings, and vendor login/booth records. It no longer creates a default
-customer when the customer table is empty, so a reset database can remain clean
-until an administrator creates the first tokener.
+Hosted read paths no longer run Supabase baseline repair. The hosted event,
+admin account, event settings, and vendor login/booth records are maintained by
+migrations and controlled setup/reset steps instead of being repaired during
+customer, vendor, tokener, or administrator activity requests.
 
 Claim QR redemption, private account loading, and wallet QR regeneration now
 skip Supabase baseline repair entirely and query the target customer record
@@ -274,6 +276,31 @@ The `/enter` surface now uses the earlier publicly listed Big Blue Floorball
 image from the official site instead of generated local raster art. The mobile
 hero keeps the image full-width and centered so the photo is no longer visibly
 cut off before the login form.
+
+Refund authority now sits with administrators. The local `RefundService`,
+deterministic seed data, and refund integration tests reject vendor actors and
+record refund actors as administrators. The hosted vendor dashboard no longer
+shows an **Add** or refund action after scanning a customer wallet, and the
+vendor charge API accepts only deductions. Supabase migration
+`20260731090000_add_admin_vendor_transaction_refund.sql` drops the hosted vendor
+quick-return RPC and adds an administrator-only refund RPC that reverses a
+selected vendor charge transaction with linked customer credit and vendor debit
+ledger entries.
+
+The administrator tokeners screen now opens each tokener in a popup instead of a
+sticky side profile. The popup hides raw private account links and raw claim-code
+values, keeps the one-time claim QR available, loads wallet transaction history
+on demand through `/api/admin/tokeners/[customerId]`, and lets an administrator
+record a full or partial refund from a selected vendor charge. Customer history
+labels refund credits as received refunds, vendor history labels vendor refund
+debits as admin refunds, and the admin transaction reports include a dedicated
+**Vendor1** tab so the simple `Vendor1` account's activity is visible separately
+from game and food booth reports.
+
+Administrator activity loading now avoids the previous repair and full-ledger
+metric pass. `/api/admin/transactions` uses the `get_admin_transaction_metrics`
+database helper for headline totals, keeps the visible issuance and booth
+reports, and no longer builds an unused top-level transaction list.
 
 ## Validation record
 
@@ -438,7 +465,28 @@ cut off before the login form.
 | Add-credit camera focused test | Passed, 2026-07-30 | Focused add-credits dialog tests passed after replacing file-input camera capture with the in-app camera preview and keeping upload as a separate fallback. |
 | Claim/private account speed smoke | Passed, 2026-07-30 | Localhost missing-claim and missing-private-link API requests completed without running Supabase baseline repair; warm private-link misses returned in about 160-173 ms and claim misses in about 323 ms. |
 
-Replace “Not run/recorded” with the date, command, outcome, and concise failure limitation when a check is actually executed.
+| `npm run format` | Passed, 2026-07-31 | Repository Prettier write completed after moving refunds to administrator control and adding the admin tokener popup refund flow. |
+| `npm run format:check` | Passed, 2026-07-31 | Repository-wide Prettier check completed after the admin refund and popup changes. |
+| `npm run lint` | Passed, 2026-07-31 | Repository-wide ESLint completed without errors after removing the vendor refund action and adding the admin refund popup. |
+| `npm run typecheck` | Passed, 2026-07-31 | Repository-wide `tsc --noEmit` completed with the expanded admin tokener transaction read model and new admin refund API route. |
+| Focused admin refund checks | Passed, 2026-07-31 | Focused Vitest run passed: 5 files and 31 tests covering `RefundService`, refund/adjustment integration, local seed lifecycle, admin tokeners popup refund submission, and admin transaction reports. |
+| `npm run test` | Passed, 2026-07-31 | Repository-wide Vitest suite passed: 61 test files and 319 tests. |
+| `npm run build` | Passed, 2026-07-31 | Next.js 16.2.12 production build completed; route table includes `/api/admin/tokeners/[customerId]`, `/api/admin/tokeners/[customerId]/refunds`, and the vendor dashboard route. |
+| `npm run test:e2e` | Passed, 2026-07-31 | Playwright smoke passed on mobile, desktop, and tablet Chromium for the current `/` to `/enter` flow. |
+| Supabase admin refund migration | Passed, 2026-07-31 | `npx supabase db push --linked` applied `20260731090000_add_admin_vendor_transaction_refund.sql`, dropping the hosted vendor quick-return RPC and adding the administrator refund RPC. Docker-only migration catalog cache warning did not block the remote push. |
+| Supabase migration-list verification | Passed, 2026-07-31 | `npx supabase migration list --linked` showed all seven local migrations present remotely, including `20260731090000`. |
+| `npm run format:check` | Passed, 2026-07-31 | Repository-wide Prettier check completed after the activity fast-path changes and documentation updates. |
+| `npm run lint` | Passed, 2026-07-31 | Repository-wide ESLint completed without errors after removing the unused Supabase baseline repair path and moving the refund permission to administrators. |
+| `npm run typecheck` | Passed, 2026-07-31 | Repository-wide `tsc --noEmit` completed with the activity helper RPC clients and permission update. |
+| Focused activity and permission checks | Passed, 2026-07-31 | Focused Vitest run passed: 3 files and 8 tests covering role permissions, admin activity screen, and admin tokeners popup behavior. |
+| `npm run test` | Passed, 2026-07-31 | Repository-wide Vitest suite passed: 61 test files and 319 tests after the activity fast-path changes. |
+| `npm run build` | Passed, 2026-07-31 | Next.js 16.2.12 production build completed with `/api/admin/transactions`, `/api/vendor/overview`, and the admin tokener routes. |
+| `npm run test:e2e` | Passed, 2026-07-31 | Playwright smoke passed on mobile, desktop, and tablet Chromium for the current `/` to `/enter` flow after the activity helper changes. |
+| Supabase activity helper migration | Passed, 2026-07-31 | `npx supabase db push --linked` applied `20260731093000_add_activity_overview_helpers.sql`, adding compact administrator metric and vendor overview helper RPCs. Docker-only migration catalog cache warning did not block the remote push. |
+| Supabase migration-list verification | Passed, 2026-07-31 | `npx supabase migration list --linked` showed all eight local migrations present remotely, including `20260731093000`. |
+| Activity API timing smoke | Passed, 2026-07-31 | Existing localhost dev server smoke through prototype cookies loaded `/api/admin/transactions` in about 2577 ms and `/api/vendor/overview` for `Vendor1` in about 421 ms; the admin response returned 3 booth reports and the vendor response returned 5 recent rows. |
+
+Replace "Not run/recorded" with the date, command, outcome, and concise failure limitation when a check is actually executed.
 
 ## Known limitations
 

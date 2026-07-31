@@ -126,24 +126,25 @@ Staff never edits a balance directly. Any commit failure leaves all related reco
 
 The vendor may preview `/vendor/storefront`, display `/vendor/qr`, and inspect transactions without changing ledger records.
 
-## Vendor full or partial refund
+## Administrator full or partial vendor refund
 
-1. Vendor opens a completed order from transaction history.
-2. The UI shows original total, prior refunds, and remaining refundable tokens.
-3. Vendor enters a positive integer amount no greater than the remaining amount.
-4. Vendor enters a mandatory reason.
-5. Vendor reviews customer, order, refund amount, and resulting remaining amount.
-6. Vendor enters the prototype PIN.
-7. The service verifies actor/vendor ownership, PIN, order state, cumulative refunds, and vendor balance.
-8. In one transaction, it creates:
-   - a refund record;
+1. An administrator opens `/admin/tokeners`.
+2. They select a customer, which opens a popup with the claim QR, safe customer summary, and transaction history.
+3. Raw private account links and raw claim-code values are not displayed in the popup.
+4. The administrator chooses a refundable vendor charge from the transaction history.
+5. The UI shows the original charge, vendor, prior refunds, and remaining refundable tokens.
+6. The administrator enters a positive amount no greater than the remaining amount, such as a full refund from Vendor1 to User2 or a 4-token partial refund after a 10-token overcharge for a 6-token item.
+7. The administrator enters a mandatory reason and confirms once.
+8. The service verifies the administrator actor, original customer/vendor ledger pair, cumulative refunds, and vendor balance.
+9. In one transaction, it creates:
    - a reversing customer credit linked to the original customer debit;
    - a reversing vendor debit linked to the original vendor credit;
-   - a refund audit entry.
-9. The original order and ledger entries remain unchanged.
-10. The receipt and both parties’ histories show full or partial status.
+   - a refund audit entry;
+   - a refund record when the original transaction has an order record.
+10. The original order and ledger entries remain unchanged.
+11. Customer history shows a refund received, vendor history shows an admin refund debit, and administrator views show the refund as admin-recorded.
 
-Duplicate idempotency, over-refund, invalid amount, insufficient vendor balance, and repeated submission are rejected safely.
+Duplicate idempotency, over-refund, invalid amount, insufficient vendor balance, and repeated submission are rejected safely. Vendors can inspect transactions but cannot initiate refunds.
 
 ## Administrator settlement recording
 
@@ -168,7 +169,7 @@ Duplicate idempotency, over-refund, invalid amount, insufficient vendor balance,
 
 ## Administrator adds customer credits
 
-1. An administrator opens a customer profile from `/admin/tokeners`.
+1. An administrator opens a customer popup from `/admin/tokeners`.
 2. They choose **Add credits**, which opens a two-step modal.
 3. Step 1 provides separate **Take photo** and **Upload image** controls for a
    HEIC, HEIF, JPEG, PNG, or WebP image of the PayNow confirmation or cash

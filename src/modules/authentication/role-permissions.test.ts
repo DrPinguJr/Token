@@ -21,16 +21,16 @@ const vendorSession: AuthenticatedSessionReadModel = {
 describe("role permissions", () => {
   it("allows only the role capabilities declared by the security matrix", () => {
     expect(hasRolePermission("customer", "purchase:create")).toBe(true);
-    expect(hasRolePermission("vendor", "vendor-refund:create-own")).toBe(true);
+    expect(hasRolePermission("vendor", "vendor-refund:create")).toBe(false);
     expect(hasRolePermission("staff", "token-issuance:create")).toBe(true);
     expect(hasRolePermission("administrator", "settlement:record")).toBe(true);
+    expect(hasRolePermission("administrator", "vendor-refund:create")).toBe(
+      true,
+    );
 
     expect(hasRolePermission("customer", "settlement:record")).toBe(false);
     expect(hasRolePermission("vendor", "token-issuance:create")).toBe(false);
     expect(hasRolePermission("staff", "purchase:create")).toBe(false);
-    expect(hasRolePermission("administrator", "vendor-refund:create-own")).toBe(
-      false,
-    );
   });
 
   it("throws a stable permission error for a denied service action", () => {

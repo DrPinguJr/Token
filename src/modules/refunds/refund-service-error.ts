@@ -1,10 +1,9 @@
 export type RefundServiceErrorCode =
   | "REFUND_INVALID_COMMAND"
-  | "REFUND_ACTOR_NOT_ACTIVE_VENDOR"
+  | "REFUND_ACTOR_NOT_ACTIVE_ADMINISTRATOR"
   | "REFUND_VENDOR_NOT_FOUND"
   | "REFUND_ORDER_NOT_FOUND"
   | "REFUND_ORDER_NOT_COMPLETED"
-  | "REFUND_ORDER_OWNERSHIP_MISMATCH"
   | "REFUND_ORDER_RELATIONSHIPS_INVALID"
   | "REFUND_CUSTOMER_ACCOUNT_INVALID"
   | "REFUND_WALLET_NOT_ACTIVE"
@@ -20,14 +19,12 @@ export type RefundServiceErrorCode =
 
 const refundErrorMessages = {
   REFUND_INVALID_COMMAND: "The refund command is invalid.",
-  REFUND_ACTOR_NOT_ACTIVE_VENDOR:
-    "An active vendor account is required to create a refund.",
+  REFUND_ACTOR_NOT_ACTIVE_ADMINISTRATOR:
+    "An active administrator account is required to create a refund.",
   REFUND_VENDOR_NOT_FOUND:
-    "The vendor profile for the refund actor could not be found.",
+    "The order vendor profile for the refund could not be found.",
   REFUND_ORDER_NOT_FOUND: "The completed order could not be found.",
   REFUND_ORDER_NOT_COMPLETED: "Only completed orders can be refunded.",
-  REFUND_ORDER_OWNERSHIP_MISMATCH:
-    "The vendor account does not own the order being refunded.",
   REFUND_ORDER_RELATIONSHIPS_INVALID:
     "The order's customer, vendor, and wallet relationships are inconsistent.",
   REFUND_CUSTOMER_ACCOUNT_INVALID:

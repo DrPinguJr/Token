@@ -8,7 +8,6 @@ import {
   LoaderCircle,
   LogOut,
   Minus,
-  Plus,
   ScanLine,
   Square,
   WalletCards,
@@ -48,7 +47,7 @@ interface VendorOverview {
 }
 
 type ScanState = "idle" | "starting" | "active" | "error";
-type ChargeMode = "add" | "deduct";
+type ChargeMode = "deduct";
 
 function parseTokenAmount(value: string): number | null {
   if (!/^\d+(?:\.\d{1,2})?$/.test(value.trim())) {
@@ -109,7 +108,7 @@ function formatActivityType(entryType: string): string {
     case "vendor_receipt":
       return "Deducted";
     case "vendor_refund":
-      return "Added back";
+      return "Admin refund";
     case "vendor_settlement":
       return "Settlement";
     default:
@@ -298,10 +297,7 @@ export function VendorDashboardRoute() {
         error instanceof Error &&
           error.message === "TOKEN_CHARGE_INSUFFICIENT_BALANCE"
           ? "Not enough customer tokens."
-          : error instanceof Error &&
-              error.message === "TOKEN_RETURN_INSUFFICIENT_VENDOR_BALANCE"
-            ? "Not enough vendor tokens."
-            : "Could not save. Try again.",
+          : "Could not save. Try again.",
       );
     } finally {
       setIsSaving(false);
@@ -535,19 +531,11 @@ export function VendorDashboardRoute() {
               </div>
 
               {mode === null ? (
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMode("add")}
-                    className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-3xl bg-brand-mint-soft text-xl font-bold text-brand-mint-strong"
-                  >
-                    <Plus aria-hidden="true" className="size-8" />
-                    Add
-                  </button>
+                <div className="mt-6">
                   <button
                     type="button"
                     onClick={() => setMode("deduct")}
-                    className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-3xl bg-ink text-xl font-bold text-white"
+                    className="flex min-h-28 w-full flex-col items-center justify-center gap-2 rounded-3xl bg-ink text-xl font-bold text-white"
                   >
                     <Minus aria-hidden="true" className="size-8" />
                     Deduct
@@ -571,7 +559,7 @@ export function VendorDashboardRoute() {
                   </button>
                   <label className="mt-4 block">
                     <span className="text-sm font-bold text-ink">
-                      {mode === "add" ? "Add tokens" : "Deduct tokens"}
+                      Deduct tokens
                     </span>
                     <input
                       autoFocus

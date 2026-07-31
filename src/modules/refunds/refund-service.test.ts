@@ -30,6 +30,16 @@ const vendorAccount: Account = {
   updatedAt: "2026-07-25T00:00:00.000Z",
 };
 
+const administratorAccount: Account = {
+  id: "account-administrator-001",
+  mobileNumber: "90000004",
+  displayName: "Test Administrator Account",
+  role: "administrator",
+  status: "active",
+  createdAt: "2026-07-25T00:00:00.000Z",
+  updatedAt: "2026-07-25T00:00:00.000Z",
+};
+
 const customerAccount: Account = {
   id: "account-customer-001",
   mobileNumber: "90000001",
@@ -186,7 +196,7 @@ function createIdProvider(): TransactionIdProvider {
 }
 
 function createRefundHarness(options?: {
-  readonly vendorAccountOverride?: Account;
+  readonly actorAccountOverride?: Account;
   readonly customerAccountOverride?: Account | null;
   readonly customerOverride?: Customer | null;
   readonly vendorOverride?: Vendor | null;
@@ -202,7 +212,7 @@ function createRefundHarness(options?: {
     ],
     auditLogs: [],
   };
-  const actor = options?.vendorAccountOverride ?? vendorAccount;
+  const actor = options?.actorAccountOverride ?? administratorAccount;
   const ownedVendor =
     options !== undefined && "vendorOverride" in options
       ? options.vendorOverride
@@ -265,8 +275,8 @@ function createRefundHarness(options?: {
         ) ?? null,
     },
     vendors: {
-      getByAccountId: async (accountId: string) =>
-        ownedVendor?.accountId === accountId ? ownedVendor : null,
+      getById: async (id: string) =>
+        ownedVendor?.id === id ? ownedVendor : null,
     },
     wallets: {
       getById: async (id: string) =>
@@ -324,14 +334,14 @@ describe("RefundService", () => {
     );
 
     const partialReceipt = await service.createRefund({
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 10,
       reason: "One item was unavailable.",
       idempotencyKey: "test:refund:partial",
     });
     const fullReceipt = await service.createRefund({
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 20,
       reason: "The remainder of the order was cancelled.",
@@ -378,7 +388,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 31,
         reason: "Invalid excessive refund.",
@@ -415,7 +425,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 10,
         reason: "Vendor cannot fund this refund.",
@@ -432,7 +442,7 @@ describe("RefundService", () => {
   it("rejects duplicate idempotency keys", async () => {
     const { service, state } = createRefundHarness();
     const command = {
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 5,
       reason: "Duplicate submission test.",
@@ -454,7 +464,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 5,
         reason: "Authorization ordering test.",
@@ -466,33 +476,21 @@ describe("RefundService", () => {
     expect(getRunCallCount()).toBe(0);
   });
 
-  it("rejects a vendor actor who does not own the order", async () => {
-    const otherVendor = {
-      ...vendor,
-      id: "vendor-002",
-      accountId: "account-vendor-002",
-      walletId: "wallet-vendor-002",
-    };
-    const otherVendorAccount = {
-      ...vendorAccount,
-      id: otherVendor.accountId,
-      mobileNumber: "90000005",
-    };
+  it("rejects a vendor actor even when that vendor owns the order", async () => {
     const { service } = createRefundHarness({
-      vendorAccountOverride: otherVendorAccount,
-      vendorOverride: otherVendor,
+      actorAccountOverride: vendorAccount,
     });
 
     await expect(
       service.createRefund({
-        actorAccountId: otherVendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 5,
-        reason: "Ownership mismatch test.",
-        idempotencyKey: "test:refund:ownership",
+        reason: "Vendor actor rejection test.",
+        idempotencyKey: "test:refund:vendor-actor",
       }),
     ).rejects.toMatchObject({
-      code: "REFUND_ORDER_OWNERSHIP_MISMATCH",
+      code: "REFUND_ACTOR_NOT_ACTIVE_ADMINISTRATOR",
     });
   });
 
@@ -510,7 +508,7 @@ describe("RefundService", () => {
       },
     });
     const command = {
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 5,
       reason: "Relationship integrity test.",
@@ -543,7 +541,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 5,
         reason: "Original ledger relationship integrity test.",
@@ -567,7 +565,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 5,
         reason: "Refund remains owed after login was disabled.",
@@ -589,7 +587,7 @@ describe("RefundService", () => {
       },
     });
     const command = {
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 5,
       reason: "Customer owner account integrity test.",
@@ -615,7 +613,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 1,
         reason: "Corrupt customer balance must be rejected.",
@@ -657,7 +655,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 1,
         reason: "Unsafe customer credit projection test.",
@@ -675,7 +673,7 @@ describe("RefundService", () => {
     const { service, state } = createRefundHarness();
 
     await service.createRefund({
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 5,
       reason: "Initial valid refund.",
@@ -695,7 +693,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 5,
         reason: "Tampered prior ledger pair must block another refund.",
@@ -713,7 +711,7 @@ describe("RefundService", () => {
     const { service, state } = createRefundHarness();
 
     await service.createRefund({
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 5,
       reason: "Create ledger entries that will be orphaned.",
@@ -723,7 +721,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 5,
         reason: "Orphan refund entries must block another refund.",
@@ -750,7 +748,7 @@ describe("RefundService", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 5,
         reason: "Generated transaction group collision test.",

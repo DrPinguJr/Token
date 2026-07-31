@@ -58,7 +58,7 @@ export interface RefundTransactionRepositories {
     RefundRepository,
     "create" | "findByOrderId" | "getByIdempotencyKey"
   >;
-  readonly vendors: Pick<VendorRepository, "getByAccountId">;
+  readonly vendors: Pick<VendorRepository, "getById">;
   readonly wallets: Pick<WalletRepository, "getById">;
 }
 
@@ -320,7 +320,7 @@ function parseRefundCommand(command: unknown): RefundCommand {
 
 /**
  * Creates a full or partial refund without modifying the completed order or its
- * original purchase entries. Authorization (the Phase 4 PIN hook) is invoked
+ * original purchase entries. Authorization (for administrator confirmation) is invoked
  * before the transaction runner opens its persistence unit of work.
  */
 export class RefundService {
@@ -372,10 +372,10 @@ export class RefundService {
 
       if (
         actor === null ||
-        actor.role !== "vendor" ||
+        actor.role !== "administrator" ||
         actor.status !== "active"
       ) {
-        throw new RefundServiceError("REFUND_ACTOR_NOT_ACTIVE_VENDOR");
+        throw new RefundServiceError("REFUND_ACTOR_NOT_ACTIVE_ADMINISTRATOR");
       }
 
       if (duplicateRefund !== null) {
@@ -390,14 +390,10 @@ export class RefundService {
         throw new RefundServiceError("REFUND_ORDER_NOT_COMPLETED");
       }
 
-      const vendor = await repositories.vendors.getByAccountId(actor.id);
+      const vendor = await repositories.vendors.getById(order.vendorId);
 
       if (vendor === null) {
         throw new RefundServiceError("REFUND_VENDOR_NOT_FOUND");
-      }
-
-      if (vendor.id !== order.vendorId) {
-        throw new RefundServiceError("REFUND_ORDER_OWNERSHIP_MISMATCH");
       }
 
       const [
@@ -613,7 +609,7 @@ export class RefundService {
           actorAccountId: actor.id,
           targetType: "refund",
           targetId: refund.id,
-          description: `${refundScope === "full" ? "Full" : "Partial"} order refund recorded by vendor.`,
+          description: `${refundScope === "full" ? "Full" : "Partial"} order refund recorded by administrator.`,
           metadata: {
             orderId: order.id,
             customerId: order.customerId,

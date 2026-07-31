@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 const chargeRequestSchema = z
   .object({
     customerId: z.string().uuid(),
-    direction: z.enum(["add", "deduct"]).default("deduct"),
+    direction: z.literal("deduct").default("deduct"),
     tokenAmount: z.coerce.number().positive().multipleOf(0.01),
   })
   .strict();
@@ -46,9 +46,7 @@ export async function POST(request: Request) {
     const message =
       code === "TOKEN_CHARGE_INSUFFICIENT_BALANCE"
         ? "Customer wallet does not have enough tokens."
-        : code === "TOKEN_RETURN_INSUFFICIENT_VENDOR_BALANCE"
-          ? "Vendor wallet does not have enough tokens to return."
-          : "Customer wallet could not be charged.";
+        : "Customer wallet could not be charged.";
 
     return NextResponse.json({ code, message }, { status: 400 });
   }

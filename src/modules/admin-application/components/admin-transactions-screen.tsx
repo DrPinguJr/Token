@@ -28,7 +28,7 @@ export interface AdminTransactionsScreenProps {
   readonly loadOverview: () => Promise<AdminTransactionOverview>;
 }
 
-type ReportTab = "food" | "games" | "issuance";
+type ReportTab = "food" | "games" | "issuance" | "vendor1";
 
 function formatEntryType(entryType: string): string {
   return entryType
@@ -95,8 +95,14 @@ const emptyFoodReport: AdminBoothReport = {
   transactions: [],
 };
 
+const emptyVendor1Report: AdminBoothReport = {
+  category: "vendor1",
+  summaries: [],
+  transactions: [],
+};
+
 const emptyOverview: AdminTransactionOverview = {
-  boothReports: [emptyGamesReport, emptyFoodReport],
+  boothReports: [emptyVendor1Report, emptyGamesReport, emptyFoodReport],
   creditIssuances: [],
   metrics: {
     issuedTokens: 0,
@@ -159,6 +165,10 @@ export function AdminTransactionsScreen({
   const foodReport =
     loadedOverview.boothReports.find((report) => report.category === "food") ??
     emptyFoodReport;
+  const vendor1Report =
+    loadedOverview.boothReports.find(
+      (report) => report.category === "vendor1",
+    ) ?? emptyVendor1Report;
 
   return (
     <div className="space-y-6">
@@ -241,6 +251,12 @@ export function AdminTransactionsScreen({
               onClick={() => setActiveTab("issuance")}
             />
             <ReportTabButton
+              active={activeTab === "vendor1"}
+              icon={<Store />}
+              label="Vendor1"
+              onClick={() => setActiveTab("vendor1")}
+            />
+            <ReportTabButton
               active={activeTab === "games"}
               icon={<Gamepad2 />}
               label="Game booths"
@@ -256,6 +272,15 @@ export function AdminTransactionsScreen({
 
           {activeTab === "issuance" && (
             <CreditIssuanceReport issuances={loadedOverview.creditIssuances} />
+          )}
+          {activeTab === "vendor1" && (
+            <BoothReportPanel
+              filter="all"
+              icon={<Store />}
+              onFilterChange={() => undefined}
+              report={vendor1Report}
+              title="Vendor1"
+            />
           )}
           {activeTab === "games" && (
             <BoothReportPanel
@@ -595,27 +620,29 @@ function BoothReportPanel({
             </div>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <label className="flex items-center gap-2 text-sm font-bold text-ink">
-              Booth
-              <select
-                value={filter}
-                onChange={(event) =>
-                  onFilterChange(
-                    event.target.value === "all"
-                      ? "all"
-                      : Number(event.target.value),
-                  )
-                }
-                className="min-h-11 rounded-full bg-canvas px-4 py-2 text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus"
-              >
-                <option value="all">All</option>
-                {[1, 2, 3, 4, 5, 6].map((boothNumber) => (
-                  <option key={boothNumber} value={boothNumber}>
-                    Booth {boothNumber}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {report.category !== "vendor1" && (
+              <label className="flex items-center gap-2 text-sm font-bold text-ink">
+                Booth
+                <select
+                  value={filter}
+                  onChange={(event) =>
+                    onFilterChange(
+                      event.target.value === "all"
+                        ? "all"
+                        : Number(event.target.value),
+                    )
+                  }
+                  className="min-h-11 rounded-full bg-canvas px-4 py-2 text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  <option value="all">All</option>
+                  {[1, 2, 3, 4, 5, 6].map((boothNumber) => (
+                    <option key={boothNumber} value={boothNumber}>
+                      Booth {boothNumber}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <button
               type="button"
               onClick={exportBooths}

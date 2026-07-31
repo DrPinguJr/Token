@@ -24,6 +24,7 @@ import {
 } from "./customer-access-code";
 import type {
   AdminTokenerAccessSummary,
+  AdminTokenerTransactionItem,
   PrivateAccountReadModel,
 } from "./customer-access-read-model";
 import { buildTokenlyQrPayload } from "@/modules/qr-payments";
@@ -138,7 +139,11 @@ async function loadWalletSnapshot(
     CustomerAccessQueryRepositories,
     "ledgerEntries" | "wallets"
   >,
-): Promise<{ readonly balance: number; readonly wallet: Wallet }> {
+): Promise<{
+  readonly balance: number;
+  readonly entries: readonly LedgerEntry[];
+  readonly wallet: Wallet;
+}> {
   const wallet = await repositories.wallets.getById(customer.walletId);
   if (
     wallet === null ||
@@ -149,7 +154,74 @@ async function loadWalletSnapshot(
   }
 
   const entries = await repositories.ledgerEntries.findByWalletId(wallet.id);
-  return Object.freeze({ balance: calculateWalletBalance(entries), wallet });
+  return Object.freeze({
+    balance: calculateWalletBalance(entries),
+    entries,
+    wallet,
+  });
+}
+
+function toAdminTokenerTransactionItems(
+  entries: readonly LedgerEntry[],
+  vendorsById: ReadonlyMap<string, Vendor>,
+): readonly AdminTokenerTransactionItem[] {
+  const refundedByPurchaseEntryId = new Map<string, number>();
+
+  for (const entry of entries) {
+    if (
+      entry.entryType === "customer_refund" &&
+      entry.direction === "credit" &&
+      entry.reversesLedgerEntryId !== null
+    ) {
+      refundedByPurchaseEntryId.set(
+        entry.reversesLedgerEntryId,
+        (refundedByPurchaseEntryId.get(entry.reversesLedgerEntryId) ?? 0) +
+          entry.tokenAmount,
+      );
+    }
+  }
+
+  return Object.freeze(
+    entries
+      .map((entry): AdminTokenerTransactionItem => {
+        const vendor =
+          entry.relatedVendorId === null
+            ? null
+            : (vendorsById.get(entry.relatedVendorId) ?? null);
+        const refundedTokenAmount =
+          refundedByPurchaseEntryId.get(entry.id) ?? 0;
+        const refundableTokenAmount =
+          entry.entryType === "customer_purchase" && entry.direction === "debit"
+            ? Math.max(0, entry.tokenAmount - refundedTokenAmount)
+            : 0;
+
+        return {
+          description: entry.description,
+          direction: entry.direction,
+          entryType: entry.entryType,
+          id: entry.id,
+          occurredAt: entry.occurredAt,
+          reference: entry.reference,
+          refundableTokenAmount,
+          title:
+            entry.entryType === "customer_purchase"
+              ? "Vendor charge"
+              : entry.entryType === "customer_refund"
+                ? "Admin refund"
+                : entry.entryType === "token_issuance"
+                  ? "Credit issuance"
+                  : "Wallet activity",
+          tokenAmount: entry.tokenAmount,
+          transactionGroupId: entry.transactionGroupId,
+          vendorName: vendor?.displayName ?? null,
+          vendorUsername: null,
+        };
+      })
+      .sort(
+        (left, right) =>
+          Date.parse(right.occurredAt) - Date.parse(left.occurredAt),
+      ),
+  );
 }
 
 async function toAdminSummary(
@@ -162,17 +234,20 @@ async function toAdminSummary(
     throw new CustomerAccessDataUnavailableError();
   }
 
-  const { balance } = await loadWalletSnapshot(customer, repositories);
+  const [{ balance, entries }, vendors] = await Promise.all([
+    loadWalletSnapshot(customer, repositories),
+    repositories.vendors.list(),
+  ]);
+  const vendorsById = new Map(vendors.map((vendor) => [vendor.id, vendor]));
 
   return Object.freeze({
     customerId: customer.id,
     displayName: account.displayName,
     balance,
-    claimCode: credentials.claimCode,
     claimPath: buildClaimPath(credentials.claimCode),
     claimExpiresAt: credentials.claimExpiresAt,
     claimedAt: credentials.claimedAt,
-    privateAccountPath: buildPrivateAccountPath(credentials.privateAccessCode),
+    transactions: toAdminTokenerTransactionItems(entries, vendorsById),
     walletPublicCode: customer.publicCode,
     walletQrUpdatedAt: credentials.walletQrUpdatedAt,
   });
@@ -212,9 +287,7 @@ function toTransactionItem(
           ? "Purchase"
           : `Purchase at ${vendor.displayName}`
         : kind === "refund"
-          ? vendor === null
-            ? "Refund"
-            : `Refund from ${vendor.displayName}`
+          ? "Refund received"
           : "Wallet activity";
 
   return Object.freeze({

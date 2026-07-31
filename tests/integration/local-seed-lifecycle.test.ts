@@ -138,7 +138,7 @@ describe("local seed lifecycle", () => {
     });
 
     const receipt = await service.createRefund({
-      actorAccountId: "account-vendor-001",
+      actorAccountId: "account-admin-001",
       orderId: "order-001",
       tokenAmount: 18,
       reason: "Complete the remaining seeded refund regression.",

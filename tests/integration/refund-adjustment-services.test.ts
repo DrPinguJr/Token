@@ -315,14 +315,14 @@ describe("refund and adjustment IndexedDB integration", () => {
     const service = createRefundService();
 
     const partial = await service.createRefund({
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 12,
       reason: "Part of the integration order was unavailable.",
       idempotencyKey: "test:refund:integration:partial",
     });
     const full = await service.createRefund({
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 18,
       reason: "The remainder of the integration order was cancelled.",
@@ -376,7 +376,7 @@ describe("refund and adjustment IndexedDB integration", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 31,
         reason: "Attempted integration over-refund.",
@@ -399,14 +399,14 @@ describe("refund and adjustment IndexedDB integration", () => {
     const service = createRefundService();
     const results = await Promise.allSettled([
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 20,
         reason: "First competing integration refund.",
         idempotencyKey: "test:refund:integration:concurrent:first",
       }),
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 20,
         reason: "Second competing integration refund.",
@@ -467,7 +467,7 @@ describe("refund and adjustment IndexedDB integration", () => {
 
     await expect(
       service.createRefund({
-        actorAccountId: vendorAccount.id,
+        actorAccountId: administratorAccount.id,
         orderId: order.id,
         tokenAmount: 5,
         reason: "Atomic rollback integration test.",
@@ -623,7 +623,7 @@ describe("refund and adjustment IndexedDB integration", () => {
     const service = createRefundService();
 
     await service.createRefund({
-      actorAccountId: vendorAccount.id,
+      actorAccountId: administratorAccount.id,
       orderId: order.id,
       tokenAmount: 8,
       reason: "Settlement integration calculation refund.",

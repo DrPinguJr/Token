@@ -24,7 +24,7 @@ Phase 1 Foundation
               -> Phase 10 Final validation
 ```
 
-The role applications share Phase 4 authentication. Staff issuance, customer purchases, vendor refunds, settlements, and administrator tracing depend on the Phase 2 data model and Phase 3 transaction rules.
+The role applications share Phase 4 authentication. Staff issuance, customer purchases, administrator refunds, settlements, and administrator tracing depend on the Phase 2 data model and Phase 3 transaction rules.
 
 ## Phase 1 — Foundation
 
@@ -150,7 +150,7 @@ Phases 2–5 and refund/settlement contracts.
 - Vendor dashboard and profile editor.
 - Product create/edit/archive/restore, availability, sold-out, and reorder controls.
 - Vendor QR and storefront preview.
-- Transaction history and PIN-confirmed full/partial refund flow.
+- Transaction history without refund controls.
 - Settlement history and manual-record disclosure.
 
 ## Phase 8 — Administrator application
@@ -164,6 +164,7 @@ All prior domain flows, so linked records exist to inspect.
 - Dashboard and searchable/filterable account and activity views.
 - Ledger, issuance, evidence, order, refund, settlement, and audit inspection.
 - Transaction trace connecting all related records.
+- Full and partial vendor-transaction refunds from customer transaction history.
 - Filtered CSV export.
 - Manual settlement recording and status changes.
 - Event/support/rate settings.
@@ -207,7 +208,7 @@ Also verify:
 - IndexedDB data survives refresh; no destructive reset/reseed control is
   exposed in the application.
 - Customer onboarding, wallet, account QR, and purchase work.
-- Vendor QR, product management, refund, and settlement history work.
+- Vendor QR, product management, admin-recorded refund visibility, and settlement history work.
 - Staff issuance and local evidence attachment work.
 - Administrator transaction tracing works.
 - Mobile and desktop layouts are usable.

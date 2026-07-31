@@ -7,6 +7,7 @@ import { AdminTransactionsScreen } from "./admin-transactions-screen";
 
 const emptyOverview: AdminTransactionOverview = {
   boothReports: [
+    { category: "vendor1", summaries: [], transactions: [] },
     { category: "games", summaries: [], transactions: [] },
     { category: "food", summaries: [], transactions: [] },
   ],

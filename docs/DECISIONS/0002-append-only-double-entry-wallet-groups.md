@@ -5,7 +5,7 @@
 
 ## Context
 
-Tokenly moves event tokens among customer and vendor wallets. Staff issue tokens, customers purchase products, vendors refund customers, administrators record settlements, and administrators may make reasoned adjustments. Directly stored/editable balances make it difficult to trace an error, prevent accidental overwrites, reverse a transaction safely, or explain a wallet total.
+Tokenly moves event tokens among customer and vendor wallets. Staff issue tokens, customers purchase products, administrators refund vendor transactions, administrators record settlements, and administrators may make reasoned adjustments. Directly stored/editable balances make it difficult to trace an error, prevent accidental overwrites, reverse a transaction safely, or explain a wallet total.
 
 The product requires immutable ledger history, idempotency, non-negative wallets, actor attribution, refunds that preserve originals, and transaction tracing.
 

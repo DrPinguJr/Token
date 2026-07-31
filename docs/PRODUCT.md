@@ -2,7 +2,7 @@
 
 ## Product summary
 
-Tokenly is a mobile-first event token wallet for a two-day floorball event of approximately 500 attendees. Customers buy event tokens from staff after a staff member manually checks a PayNow payment, then spend those tokens with event vendors. Vendors can manage products, take token payments, refund orders, and review manually recorded settlements. Staff and administrators can trace every value-changing action.
+Tokenly is a mobile-first event token wallet for a two-day floorball event of approximately 500 attendees. Customers buy event tokens from staff after a staff member manually checks a PayNow payment, then spend those tokens with event vendors. Vendors can manage products, take token payments, and review manually recorded settlements. Administrators handle refunds and can trace every value-changing action.
 
 The current deliverable is a **complete local prototype**. It must run without external accounts, API keys, hosted services, real payment verification, or deployment.
 
@@ -17,12 +17,12 @@ The current deliverable is a **complete local prototype**. It must run without e
 
 ## People and terminology
 
-| Role          | Product responsibility                                                     | Primary layout               |
-| ------------- | -------------------------------------------------------------------------- | ---------------------------- |
-| Customer      | Holds and spends event tokens; views receipts and refunds                  | Mobile-first                 |
-| Vendor        | Manages a storefront, receives tokens, refunds orders, reviews settlements | Responsive operational UI    |
-| Event staff   | Finds customers and issues tokens after manual payment checks              | Mobile/tablet-first          |
-| Administrator | Inspects and configures the event, records settlements and adjustments     | Desktop-first, mobile-usable |
+| Role          | Product responsibility                                                 | Primary layout               |
+| ------------- | ---------------------------------------------------------------------- | ---------------------------- |
+| Customer      | Holds and spends event tokens; views receipts and refunds              | Mobile-first                 |
+| Vendor        | Manages a storefront, receives tokens, and reviews settlements         | Responsive operational UI    |
+| Event staff   | Finds customers and issues tokens after manual payment checks          | Mobile/tablet-first          |
+| Administrator | Inspects and configures the event, records settlements and adjustments | Desktop-first, mobile-usable |
 
 Use **Tokener** only in short, friendly customer-facing copy. Use **customer** in code, technical documents, staff/admin screens, audit records, exports, and system errors.
 
@@ -88,14 +88,15 @@ Preferred customer phrases include “Welcome to Tokenly”, “Welcome back, To
 
 - Vendor profile, banner, logo, location, operating status, vendor QR, and storefront preview.
 - Product create, edit, archive, restore, sold-out state, availability, and ordering.
-- Dashboard metrics, orders, token transactions, full/partial refunds, and settlement history.
-- Vendor PIN confirmation for prototype refunds.
+- Dashboard metrics, orders, token transactions, and settlement history.
+- Vendors cannot issue refunds; refund requests are handled by an administrator.
 
 ### Administrator experience
 
 - Dashboard metrics for issued, spent, held, refunded, unsettled, customer, vendor, and staff activity.
 - Search and inspection across accounts, wallets, ledger entries, issuances, evidence, orders, refunds, settlements, and audit logs.
 - Transaction tracing that connects actor, customer, vendor, order, evidence, ledger entries, refund, settlement, and audit records.
+- Full and partial refunds from customer transaction history, recorded by an administrator and reflected in customer, vendor, and admin views.
 - Filtered CSV exports.
 - Reasoned administrative adjustments.
 - Event identity, fixed prototype token conversion rate, and support
@@ -120,7 +121,7 @@ Required entry accounts:
 | Event staff   | Later          | `90000003`    | `2468`          |
 | Administrator | `AdminLance`   | `90000004`    | `2468`          |
 
-At least one additional fictional customer, vendor account, and staff account must be seeded. The overall dataset includes at least three vendors (food and drinks, event merchandise, and floorball equipment), multiple products, issuances, purchases, one partial refund, one full refund, one settlement, and linked audit records. Never use real personal information.
+At least one additional fictional customer, vendor account, and staff account must be seeded. The overall dataset includes at least three vendors (food and drinks, event merchandise, and floorball equipment), multiple products, issuances, purchases, one administrator-recorded partial refund, one administrator-recorded full refund, one settlement, and linked audit records. Never use real personal information.
 
 The shared PIN is intentionally documented for development only. It must never become a production default.
 

@@ -36,7 +36,7 @@ Zod validation is necessary at each input boundary but does not make client exec
 | Purchase from vendor           |                   Yes |                    No |                    No |                                            No |
 | Show customer QR               |                   Own |                    No |                    No |                             Inspect code only |
 | Manage vendor profile/products |                    No |            Own vendor |                    No | Inspect/manage only if explicitly implemented |
-| Refund vendor order            |                    No |  Own vendor, with PIN |                    No |                                       Inspect |
+| Refund vendor order            |                    No |                    No |                    No |                                           Yes |
 | Search customers for issuance  |                    No |                    No |                   Yes |                                       Inspect |
 | Issue tokens                   |                    No |                    No |                   Yes |                                       Inspect |
 | Record settlements             |                    No |              View own |                    No |                                           Yes |

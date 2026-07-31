@@ -178,6 +178,8 @@ The service reloads products and prices, validates availability and quantity, ve
 - one vendor wallet debit;
 - one audit entry.
 
+Refunds are administrator-recorded.
+
 Entries reference their originals. The original order and ledger entries remain unchanged. Cumulative refunds cannot exceed the order’s refundable token total, and the vendor wallet cannot go below zero.
 
 ### Administrative adjustment

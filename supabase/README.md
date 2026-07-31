@@ -26,9 +26,15 @@ This directory now contains:
 - `migrations/20260729225000_add_vendor_customer_charge.sql`: adds the hosted
   vendor quick-charge function that appends paired customer debit and vendor
   credit ledger entries with an audit record.
-- `migrations/20260729231500_add_vendor_customer_return.sql`: adds the hosted
-  vendor quick-return function that credits a customer wallet and debits the
-  vendor wallet for quick add/refund interactions.
+- `migrations/20260729231500_add_vendor_customer_return.sql`: historical
+  hosted vendor quick-return function; superseded by the administrator refund
+  migration below.
+- `migrations/20260731090000_add_admin_vendor_transaction_refund.sql`: drops
+  the hosted vendor quick-return RPC and adds an administrator-only refund
+  function that reverses a selected vendor charge transaction.
+- `migrations/20260731093000_add_activity_overview_helpers.sql`: adds compact
+  read helpers for administrator activity metrics and vendor wallet overview
+  activity.
 - `planned-schema.sql`: older non-executable planning material retained for
   design context.
 
@@ -117,7 +123,7 @@ Clients must never receive permission to write arbitrary ledger/audit rows or pa
 Policy details are intentionally not final, but the target posture is:
 
 - customers can read only their own safe account/customer/wallet/order/refund records;
-- vendors can read/manage only their vendor profile/products and read linked sales/refunds/settlements;
+- vendors can read/manage only their vendor profile/products and read linked sales/admin-recorded refunds/settlements;
 - staff can perform only approved issuance/customer-lookup functions for the active event;
 - administrators can inspect event records and call controlled adjustment/settlement functions;
 - evidence uses signed, short-lived access after authorization;

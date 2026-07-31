@@ -42,7 +42,7 @@ export interface AdminCreditIssuanceReportItem {
   readonly transactionGroupId: string;
 }
 
-export type AdminBoothCategory = "food" | "games";
+export type AdminBoothCategory = "food" | "games" | "vendor1";
 
 export interface AdminBoothSummary {
   readonly boothNumber: number;

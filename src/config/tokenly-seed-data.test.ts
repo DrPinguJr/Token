@@ -290,12 +290,12 @@ describe("createTokenlySeedData", () => {
 
     for (const refund of seed.refunds) {
       const order = ordersById.get(refund.orderId);
-      const vendor = vendorsById.get(refund.vendorId);
+      const actor = accountsById.get(refund.actorAccountId);
 
       expect(refund.customerId).toBe(order?.customerId);
       expect(refund.vendorId).toBe(order?.vendorId);
       expect(refund.tokenAmount).toBeLessThanOrEqual(order?.tokenTotal ?? 0);
-      expect(refund.actorAccountId).toBe(vendor?.accountId);
+      expect(actor?.role).toBe("administrator");
     }
 
     for (const entry of seed.ledgerEntries) {

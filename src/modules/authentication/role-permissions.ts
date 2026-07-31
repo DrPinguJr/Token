@@ -13,7 +13,7 @@ export type RolePermission =
   | "token-issuance:create"
   | "vendor-products:manage-own"
   | "vendor-profile:manage-own"
-  | "vendor-refund:create-own"
+  | "vendor-refund:create"
   | "vendor-settlement:view-own"
   | "wallet:view-own";
 
@@ -26,7 +26,6 @@ const permissionsByRole = Object.freeze({
   vendor: Object.freeze([
     "vendor-products:manage-own",
     "vendor-profile:manage-own",
-    "vendor-refund:create-own",
     "vendor-settlement:view-own",
     "wallet:view-own",
   ]),
@@ -39,6 +38,7 @@ const permissionsByRole = Object.freeze({
     "event-settings:configure",
     "records:inspect",
     "settlement:record",
+    "vendor-refund:create",
   ]),
 } as const satisfies Record<AccountRole, readonly RolePermission[]>);
 

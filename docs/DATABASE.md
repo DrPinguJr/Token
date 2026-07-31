@@ -222,7 +222,7 @@ Completed orders are never edited. Refund state is derived from refund records.
 | `orderId`, `customerId`, `vendorId` | Indexed relationships           |
 | `tokenAmount`                       | Positive integer                |
 | `reason`                            | Required precise reason         |
-| `actorAccountId`                    | Vendor actor in the prototype   |
+| `actorAccountId`                    | Administrator actor             |
 | `transactionGroupId`                | Refund group                    |
 | `idempotencyKey`                    | Duplicate-submission protection |
 | `createdAt`                         | Confirmation timestamp          |

@@ -24,6 +24,7 @@ export {
 } from "./customer-access-service";
 export type {
   AdminTokenerAccessSummary,
+  AdminTokenerTransactionItem,
   ClaimedPrivateAccountReadModel,
   PrivateAccountReadModel,
 } from "./customer-access-read-model";

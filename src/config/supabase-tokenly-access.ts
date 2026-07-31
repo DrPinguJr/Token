@@ -9,25 +9,21 @@ import {
   parseTokenlyQrPayload,
 } from "@/modules/qr-payments";
 import type { CustomerTransactionListItem } from "@/modules/customer-application";
+import type { AdminTokenerTransactionItem } from "@/modules/customer-access";
 import type {
   AdminBoothCategory,
   AdminBoothReport,
   AdminBoothSummary,
   AdminBoothTransactionItem,
   AdminCreditIssuanceReportItem,
-  AdminTransactionListItem,
   AdminTransactionOverview,
 } from "@/modules/admin-application";
-import { prototypeVendorCredentials } from "@/modules/authentication/prototype-operational-credentials";
 
 import { createSupabaseServerClient } from "./supabase-server-client";
 
 const claimExpiryMinutes = 15;
-const defaultEventName = "Tokenly Event";
-const defaultEventVenue = "Event venue";
 const defaultAdminUsername = "AdminLance";
 const defaultVendorUsername = "Vendor1";
-const defaultTokensPerDollar = 1;
 const fractionalTokenAmountSchema = z.coerce
   .number()
   .positive()
@@ -66,9 +62,18 @@ export const supabaseCreditIssuanceSchema = z
 export const supabaseVendorChargeSchema = z
   .object({
     customerId: z.string().uuid(),
-    direction: z.enum(["add", "deduct"]).default("deduct"),
+    direction: z.literal("deduct").default("deduct"),
     tokenAmount: z.coerce.number().positive().multipleOf(0.01),
     vendorUsername: z.string().trim().min(1).max(64),
+  })
+  .strict();
+
+export const supabaseAdminVendorRefundSchema = z
+  .object({
+    customerId: z.string().uuid(),
+    purchaseTransactionGroupId: z.string().uuid(),
+    reason: z.string().trim().min(1).max(400),
+    tokenAmount: z.coerce.number().positive().multipleOf(0.01),
   })
   .strict();
 
@@ -90,16 +95,19 @@ export type SupabaseVendorChargeInput = z.infer<
   typeof supabaseVendorChargeSchema
 >;
 
+export type SupabaseAdminVendorRefundInput = z.infer<
+  typeof supabaseAdminVendorRefundSchema
+>;
+
 export interface SupabaseTokenerSummary {
   readonly balance: number;
-  readonly claimCode: string;
   readonly claimExpiresAt: string;
   readonly claimedAt: string | null;
   readonly claimPath: string;
   readonly customerId: string;
   readonly displayName: string;
   readonly nric: string | null;
-  readonly privateAccountPath: string;
+  readonly transactions: readonly AdminTokenerTransactionItem[];
   readonly walletPublicCode: string;
   readonly walletQrUpdatedAt: string;
 }
@@ -130,6 +138,12 @@ export interface SupabaseResolvedCustomerWallet {
 
 export interface SupabaseVendorChargeResult extends SupabaseResolvedCustomerWallet {
   readonly reference: string;
+}
+
+export interface SupabaseAdminVendorRefundResult {
+  readonly remainingRefundableTokenAmount: number;
+  readonly reference: string;
+  readonly tokener: SupabaseTokenerSummary;
 }
 
 export interface SupabaseVendorActivityItem {
@@ -165,7 +179,9 @@ export class SupabaseTokenlyAccessError extends Error {
       | "DUPLICATE_NRIC"
       | "INVALID_INPUT"
       | "TOKEN_CHARGE_INSUFFICIENT_BALANCE"
-      | "TOKEN_RETURN_INSUFFICIENT_VENDOR_BALANCE"
+      | "TOKEN_REFUND_AMOUNT_EXCEEDS_REMAINING"
+      | "TOKEN_REFUND_INSUFFICIENT_VENDOR_BALANCE"
+      | "TOKEN_REFUND_PURCHASE_NOT_FOUND"
       | "TOKEN_ADJUSTMENT_OVERDRAWS_WALLET"
       | "TOKENLY_SUPABASE_WRITE_FAILED",
     message: string,
@@ -218,15 +234,6 @@ const walletRowSchema = z
   })
   .passthrough();
 
-const vendorOverviewRowSchema = z
-  .object({
-    display_name: z.string(),
-    id: z.string().uuid(),
-    stall_location: z.string(),
-    wallet_id: z.string().uuid(),
-  })
-  .passthrough();
-
 const adminVendorReportRowSchema = z
   .object({
     account_id: z.string().uuid(),
@@ -234,6 +241,14 @@ const adminVendorReportRowSchema = z
     id: z.string().uuid(),
     stall_location: z.string(),
     wallet_id: z.string().uuid(),
+  })
+  .passthrough();
+
+const vendorNameRowSchema = z
+  .object({
+    account_id: z.string().uuid(),
+    display_name: z.string(),
+    id: z.string().uuid(),
   })
   .passthrough();
 
@@ -245,7 +260,10 @@ const ledgerEntryRowSchema = z
     id: z.string().uuid(),
     occurred_at: z.string(),
     reference: z.string(),
+    related_customer_id: z.string().uuid().nullable().optional(),
     related_order_id: z.string().uuid().nullable().optional(),
+    related_vendor_id: z.string().uuid().nullable().optional(),
+    reverses_ledger_entry_id: z.string().uuid().nullable().optional(),
     token_amount: fractionalTokenAmountSchema,
     transaction_group_id: z.string().uuid(),
     wallet_id: z.string().uuid(),
@@ -305,6 +323,36 @@ const adminTokenIssuanceReportRowSchema = z
   })
   .passthrough();
 
+const adminTransactionMetricsRowSchema = z
+  .object({
+    issued_tokens: fractionalTokenAmountSchema.catch(0),
+    refunded_tokens: fractionalTokenAmountSchema.catch(0),
+    spent_tokens: fractionalTokenAmountSchema.catch(0),
+    transaction_groups: z.coerce.number().int().nonnegative().safe(),
+  })
+  .strict();
+
+const vendorOverviewActivityRowSchema = z
+  .object({
+    description: z.string(),
+    direction: z.enum(["credit", "debit"]),
+    entryType: adminLedgerEntryRowSchema.shape.entry_type,
+    id: z.string().uuid(),
+    occurredAt: z.string(),
+    reference: z.string(),
+    tokenAmount: fractionalTokenAmountSchema,
+  })
+  .strict();
+
+const vendorOverviewRpcRowSchema = z
+  .object({
+    balance: fractionalTokenAmountSchema.catch(0),
+    display_name: z.string(),
+    recent_activity: z.array(vendorOverviewActivityRowSchema),
+    stall_location: z.string(),
+  })
+  .strict();
+
 function assertNoSupabaseError(error: { readonly message?: string } | null) {
   if (error !== null) {
     throw new SupabaseTokenlyAccessError(
@@ -336,10 +384,6 @@ function generateCode(prefix: "claim" | "cus" | "priv"): string {
   return `${prefix}_${encodeBase64Url(randomBytes(24))}`;
 }
 
-function buildVendorPublicCode(username: string): string {
-  return `vnd_${username}`;
-}
-
 function buildClaimPath(claimCode: string): string {
   return `/claim/${encodeURIComponent(claimCode)}`;
 }
@@ -360,269 +404,177 @@ function calculateBalance(
   return Math.round(balance * 100) / 100;
 }
 
+interface VendorDisplayDetails {
+  readonly displayName: string;
+  readonly username: string | null;
+}
+
+type LedgerEntryRow = z.infer<typeof ledgerEntryRowSchema>;
+
+function getCustomerTransactionPresentation(entry: LedgerEntryRow): {
+  readonly kind: CustomerTransactionListItem["kind"];
+  readonly title: string;
+} {
+  switch (entry.entry_type) {
+    case "administrative_adjustment":
+      return {
+        kind: "adjustment",
+        title: entry.direction === "credit" ? "Tokens added" : "Tokens removed",
+      };
+    case "customer_purchase":
+      return { kind: "purchase", title: "Vendor charge" };
+    case "customer_refund":
+      return { kind: "refund", title: "Refund received" };
+    case "token_issuance":
+      return { kind: "issuance", title: "Credits issued" };
+    default:
+      return { kind: "other", title: "Wallet activity" };
+  }
+}
+
+function getAdminTokenerTransactionTitle(entry: LedgerEntryRow): string {
+  switch (entry.entry_type) {
+    case "administrative_adjustment":
+      return entry.direction === "credit" ? "Admin credit" : "Admin debit";
+    case "customer_purchase":
+      return "Vendor charge";
+    case "customer_refund":
+      return "Admin refund";
+    case "token_issuance":
+      return "Credit issuance";
+    default:
+      return "Wallet activity";
+  }
+}
+
+async function loadVendorDisplayDetailsById(
+  vendorIds: readonly string[],
+): Promise<ReadonlyMap<string, VendorDisplayDetails>> {
+  const uniqueVendorIds = [...new Set(vendorIds)];
+  if (uniqueVendorIds.length === 0) {
+    return new Map();
+  }
+
+  const supabase = createSupabaseServerClient();
+  const vendorsResult = await supabase
+    .from("vendors")
+    .select("id, account_id, display_name")
+    .in("id", uniqueVendorIds);
+
+  assertNoSupabaseError(vendorsResult.error);
+  const vendors = z.array(vendorNameRowSchema).parse(vendorsResult.data);
+  const accountsResult = await supabase
+    .from("account_profiles")
+    .select("id, display_name, role, status, username")
+    .in("id", [...new Set(vendors.map((vendor) => vendor.account_id))]);
+
+  assertNoSupabaseError(accountsResult.error);
+  const accountsById = new Map(
+    z
+      .array(accountReportRowSchema)
+      .parse(accountsResult.data)
+      .map((account) => [account.id, account]),
+  );
+
+  return new Map(
+    vendors.map((vendor) => {
+      const account = accountsById.get(vendor.account_id);
+      return [
+        vendor.id,
+        {
+          displayName: vendor.display_name,
+          username: account?.username ?? null,
+        } satisfies VendorDisplayDetails,
+      ];
+    }),
+  );
+}
+
+function buildAdminTokenerTransactions(
+  entries: readonly LedgerEntryRow[],
+  vendorsById: ReadonlyMap<string, VendorDisplayDetails>,
+): readonly AdminTokenerTransactionItem[] {
+  const refundedByPurchaseEntryId = new Map<string, number>();
+
+  for (const entry of entries) {
+    if (
+      entry.entry_type === "customer_refund" &&
+      entry.direction === "credit" &&
+      entry.reverses_ledger_entry_id !== null &&
+      entry.reverses_ledger_entry_id !== undefined
+    ) {
+      refundedByPurchaseEntryId.set(
+        entry.reverses_ledger_entry_id,
+        (refundedByPurchaseEntryId.get(entry.reverses_ledger_entry_id) ?? 0) +
+          entry.token_amount,
+      );
+    }
+  }
+
+  return entries
+    .map((entry): AdminTokenerTransactionItem => {
+      const vendor =
+        entry.related_vendor_id === null ||
+        entry.related_vendor_id === undefined
+          ? null
+          : (vendorsById.get(entry.related_vendor_id) ?? null);
+      const refundedTokenAmount = refundedByPurchaseEntryId.get(entry.id) ?? 0;
+      const refundableTokenAmount =
+        entry.entry_type === "customer_purchase" && entry.direction === "debit"
+          ? Math.max(
+              0,
+              Math.round((entry.token_amount - refundedTokenAmount) * 100) /
+                100,
+            )
+          : 0;
+
+      return {
+        description: entry.description,
+        direction: entry.direction,
+        entryType: adminLedgerEntryRowSchema.shape.entry_type.parse(
+          entry.entry_type,
+        ),
+        id: entry.id,
+        occurredAt: entry.occurred_at,
+        reference: entry.reference,
+        refundableTokenAmount,
+        title: getAdminTokenerTransactionTitle(entry),
+        tokenAmount: entry.token_amount,
+        transactionGroupId: entry.transaction_group_id,
+        vendorName: vendor?.displayName ?? null,
+        vendorUsername: vendor?.username ?? null,
+      };
+    })
+    .sort(
+      (left, right) =>
+        Date.parse(right.occurredAt) - Date.parse(left.occurredAt),
+    );
+}
+
 function toTransaction(
-  entry: z.infer<typeof ledgerEntryRowSchema>,
+  entry: LedgerEntryRow,
+  vendorsById: ReadonlyMap<string, VendorDisplayDetails> = new Map(),
 ): CustomerTransactionListItem {
-  const kind =
-    entry.entry_type === "administrative_adjustment" ? "adjustment" : "other";
-  const title =
-    entry.entry_type === "administrative_adjustment"
-      ? entry.direction === "credit"
-        ? "Tokens added"
-        : "Tokens removed"
-      : "Wallet activity";
+  const presentation = getCustomerTransactionPresentation(entry);
+  const vendor =
+    entry.related_vendor_id === null || entry.related_vendor_id === undefined
+      ? null
+      : (vendorsById.get(entry.related_vendor_id) ?? null);
 
   return {
     direction: entry.direction,
     id: entry.id,
-    kind,
+    kind: presentation.kind,
     orderId: entry.related_order_id ?? null,
     occurredAt: entry.occurred_at,
     reference: entry.reference,
     subtitle: entry.description,
-    title,
+    title: presentation.title,
     tokenAmount: entry.token_amount,
     transactionGroupId: entry.transaction_group_id,
     transactionId: entry.related_order_id ?? entry.id,
-    vendorName: null,
+    vendorName: vendor?.displayName ?? null,
   };
-}
-
-async function ensureSupabaseBaseline(): Promise<{
-  readonly adminAccountId: string;
-  readonly eventId: string;
-}> {
-  const supabase = createSupabaseServerClient();
-  const adminAccount = await supabase
-    .from("account_profiles")
-    .select("id, display_name, role, status")
-    .eq("username", defaultAdminUsername)
-    .maybeSingle();
-
-  assertNoSupabaseError(adminAccount.error);
-
-  let adminAccountId =
-    adminAccount.data === null
-      ? null
-      : accountRowSchema.parse(adminAccount.data).id;
-
-  if (adminAccountId === null) {
-    const insertedAdmin = await supabase
-      .from("account_profiles")
-      .insert({
-        display_name: "Lance Admin",
-        role: "administrator",
-        status: "active",
-        username: defaultAdminUsername,
-      })
-      .select("id, display_name, role, status")
-      .single();
-
-    assertNoSupabaseError(insertedAdmin.error);
-    adminAccountId = accountRowSchema.parse(insertedAdmin.data).id;
-  }
-
-  const existingEvent = await supabase
-    .from("events")
-    .select("id")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  assertNoSupabaseError(existingEvent.error);
-
-  let eventId =
-    existingEvent.data === null
-      ? null
-      : eventRowSchema.parse(existingEvent.data).id;
-
-  if (eventId === null) {
-    const now = new Date();
-    const insertedEvent = await supabase
-      .from("events")
-      .insert({
-        ends_at: new Date(now.getTime() + 2 * 24 * 60 * 60_000).toISOString(),
-        name: defaultEventName,
-        starts_at: now.toISOString(),
-        subtitle: "Prototype deployment",
-        venue: defaultEventVenue,
-      })
-      .select("id")
-      .single();
-
-    assertNoSupabaseError(insertedEvent.error);
-    eventId = eventRowSchema.parse(insertedEvent.data).id;
-  }
-
-  const adminMembership = await supabase.from("event_role_memberships").upsert(
-    {
-      account_id: adminAccountId,
-      event_id: eventId,
-      role: "administrator",
-    },
-    { onConflict: "event_id,account_id,role" },
-  );
-  assertNoSupabaseError(adminMembership.error);
-
-  const existingSettings = await supabase
-    .from("event_settings")
-    .select("tokens_per_dollar")
-    .eq("event_id", eventId)
-    .maybeSingle();
-  assertNoSupabaseError(existingSettings.error);
-
-  if (existingSettings.data === null) {
-    const settings = await supabase.from("event_settings").insert({
-      event_id: eventId,
-      support_contact: "Event desk",
-      support_instructions: "Ask the event desk for Tokenly account help.",
-      support_label: "Tokenly help",
-      tokens_per_dollar: defaultTokensPerDollar,
-      updated_by_account_id: adminAccountId,
-    });
-    assertNoSupabaseError(settings.error);
-  } else if (
-    existingSettings.data.tokens_per_dollar !== defaultTokensPerDollar
-  ) {
-    const settings = await supabase
-      .from("event_settings")
-      .update({
-        tokens_per_dollar: defaultTokensPerDollar,
-        updated_at: new Date().toISOString(),
-        updated_by_account_id: adminAccountId,
-      })
-      .eq("event_id", eventId);
-    assertNoSupabaseError(settings.error);
-  }
-
-  const vendorAccount = await supabase
-    .from("account_profiles")
-    .select("id, display_name, role, status")
-    .eq("username", defaultVendorUsername)
-    .maybeSingle();
-  assertNoSupabaseError(vendorAccount.error);
-
-  if (vendorAccount.data === null) {
-    const insertedVendorAccount = await supabase
-      .from("account_profiles")
-      .insert({
-        display_name: "Vendor 1",
-        role: "vendor",
-        status: "active",
-        username: defaultVendorUsername,
-      })
-      .select("id, display_name, role, status")
-      .single();
-    assertNoSupabaseError(insertedVendorAccount.error);
-
-    const vendorAccountId = accountRowSchema.parse(
-      insertedVendorAccount.data,
-    ).id;
-    const insertedWallet = await supabase
-      .from("wallets")
-      .insert({
-        event_id: eventId,
-        owner_account_id: vendorAccountId,
-        owner_type: "vendor",
-        status: "active",
-      })
-      .select("id")
-      .single();
-    assertNoSupabaseError(insertedWallet.error);
-
-    const vendor = await supabase.from("vendors").insert({
-      account_id: vendorAccountId,
-      description: "Prototype vendor account.",
-      display_name: "Vendor 1",
-      event_id: eventId,
-      operating_status: "open",
-      public_code: "vnd_Vendor1",
-      stall_location: "Event floor",
-      wallet_id: eventRowSchema.parse(insertedWallet.data).id,
-    });
-    assertNoSupabaseError(vendor.error);
-  }
-
-  const hostedVendorRows = [
-    {
-      description: "Prototype vendor scanner account.",
-      displayName: "Vendor 1",
-      publicCode: "vnd_Vendor1",
-      stallLocation: "Event floor",
-      username: defaultVendorUsername,
-    },
-    ...prototypeVendorCredentials.map((vendor) => ({
-      description:
-        vendor.storeType === "food"
-          ? "Food vendor account for the hosted Tokenly prototype."
-          : "Game store account for the hosted Tokenly prototype.",
-      displayName: vendor.displayName,
-      publicCode: buildVendorPublicCode(vendor.username),
-      stallLocation: vendor.stallLocation ?? "Event floor",
-      username: vendor.username,
-    })),
-  ];
-
-  for (const vendorRow of hostedVendorRows) {
-    const accountResult = await supabase
-      .from("account_profiles")
-      .upsert(
-        {
-          display_name: vendorRow.displayName,
-          role: "vendor",
-          status: "active",
-          username: vendorRow.username,
-        },
-        { onConflict: "username" },
-      )
-      .select("id, display_name, role, status")
-      .single();
-    assertNoSupabaseError(accountResult.error);
-    const vendorAccountId = accountRowSchema.parse(accountResult.data).id;
-
-    const membership = await supabase.from("event_role_memberships").upsert(
-      {
-        account_id: vendorAccountId,
-        event_id: eventId,
-        role: "vendor",
-      },
-      { onConflict: "event_id,account_id,role" },
-    );
-    assertNoSupabaseError(membership.error);
-
-    const walletResult = await supabase
-      .from("wallets")
-      .upsert(
-        {
-          event_id: eventId,
-          owner_account_id: vendorAccountId,
-          owner_type: "vendor",
-          status: "active",
-        },
-        { onConflict: "event_id,owner_account_id" },
-      )
-      .select("id")
-      .single();
-    assertNoSupabaseError(walletResult.error);
-    const walletId = eventRowSchema.parse(walletResult.data).id;
-
-    const vendorResult = await supabase.from("vendors").upsert(
-      {
-        account_id: vendorAccountId,
-        description: vendorRow.description,
-        display_name: vendorRow.displayName,
-        event_id: eventId,
-        operating_status: "open",
-        public_code: vendorRow.publicCode,
-        stall_location: vendorRow.stallLocation,
-        wallet_id: walletId,
-      },
-      { onConflict: "event_id,account_id" },
-    );
-    assertNoSupabaseError(vendorResult.error);
-  }
-
-  return { adminAccountId, eventId };
 }
 
 async function loadPrimarySupabaseEventId(): Promise<string> {
@@ -666,7 +618,7 @@ async function loadEntriesForWallet(walletId: string) {
   const entries = await supabase
     .from("ledger_entries")
     .select(
-      "id, wallet_id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at, related_order_id",
+      "id, wallet_id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at, related_customer_id, related_vendor_id, related_order_id, reverses_ledger_entry_id",
     )
     .eq("wallet_id", walletId)
     .order("occurred_at", { ascending: false });
@@ -706,17 +658,21 @@ async function toSummary(
     loadAccount(customer.account_id),
     loadEntriesForWallet(customer.wallet_id),
   ]);
+  const vendorsById = await loadVendorDisplayDetailsById(
+    entries
+      .map((entry) => entry.related_vendor_id)
+      .filter((vendorId): vendorId is string => typeof vendorId === "string"),
+  );
 
   return {
     balance: calculateBalance(entries),
-    claimCode: customer.claim_code,
     claimExpiresAt: customer.claim_expires_at,
     claimedAt: customer.claimed_at,
     claimPath: buildClaimPath(customer.claim_code),
     customerId: customer.id,
     displayName: account.display_name,
     nric: customer.nric ?? null,
-    privateAccountPath: buildPrivateAccountPath(customer.private_access_code),
+    transactions: buildAdminTokenerTransactions(entries, vendorsById),
     walletPublicCode: customer.public_code,
     walletQrUpdatedAt: customer.wallet_qr_updated_at,
   };
@@ -862,6 +818,10 @@ function getVendorBoothCategory(
   vendor: z.infer<typeof adminVendorReportRowSchema>,
   username: string,
 ): AdminBoothCategory | null {
+  if (username === defaultVendorUsername) {
+    return "vendor1";
+  }
+
   const source = `${vendor.stall_location} ${username}`.toLocaleLowerCase(
     "en-SG",
   );
@@ -879,7 +839,12 @@ function getVendorBoothCategory(
 
 function getVendorBoothNumber(
   vendor: z.infer<typeof adminVendorReportRowSchema>,
+  username: string,
 ): number | null {
+  if (username === defaultVendorUsername) {
+    return 1;
+  }
+
   const match = /booth\s*0?([1-6])\b/i.exec(vendor.stall_location);
   return match === null ? null : Number(match[1]);
 }
@@ -923,6 +888,7 @@ async function getSupabaseAdminBoothReports(
   const vendors = z.array(adminVendorReportRowSchema).parse(vendorsResult.data);
   if (vendors.length === 0) {
     return [
+      { category: "vendor1", summaries: [], transactions: [] },
       { category: "games", summaries: [], transactions: [] },
       { category: "food", summaries: [], transactions: [] },
     ];
@@ -936,7 +902,7 @@ async function getSupabaseAdminBoothReports(
     supabase
       .from("ledger_entries")
       .select(
-        "id, wallet_id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at, related_order_id",
+        "id, wallet_id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at, related_customer_id, related_vendor_id, related_order_id, reverses_ledger_entry_id",
       )
       .in("wallet_id", [...new Set(vendors.map((vendor) => vendor.wallet_id))])
       .order("occurred_at", { ascending: false }),
@@ -961,7 +927,7 @@ async function getSupabaseAdminBoothReports(
     entriesByWalletId.set(entry.wallet_id, walletEntries);
   }
 
-  return (["games", "food"] as const).map((category) => {
+  return (["vendor1", "games", "food"] as const).map((category) => {
     const summaries: AdminBoothSummary[] = [];
     const transactions: AdminBoothTransactionItem[] = [];
 
@@ -969,7 +935,7 @@ async function getSupabaseAdminBoothReports(
       const account = accountsById.get(vendor.account_id);
       const username = account?.username ?? "";
       const boothCategory = getVendorBoothCategory(vendor, username);
-      const boothNumber = getVendorBoothNumber(vendor);
+      const boothNumber = getVendorBoothNumber(vendor, username);
 
       if (boothCategory !== category || boothNumber === null) {
         continue;
@@ -1035,7 +1001,7 @@ export async function listSupabaseTokeners(): Promise<
     supabase
       .from("ledger_entries")
       .select(
-        "id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at, related_order_id, wallet_id",
+        "id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at, related_customer_id, related_vendor_id, related_order_id, reverses_ledger_entry_id, wallet_id",
       )
       .in("wallet_id", walletIds),
   ]);
@@ -1048,11 +1014,9 @@ export async function listSupabaseTokeners(): Promise<
       .parse(accounts.data)
       .map((account) => [account.id, account]),
   );
-  const entriesByWalletId = new Map<
-    string,
-    z.infer<typeof ledgerEntryRowSchema>[]
-  >();
-  for (const entry of z.array(ledgerEntryRowSchema).parse(entries.data)) {
+  const entryRows = z.array(ledgerEntryRowSchema).parse(entries.data);
+  const entriesByWalletId = new Map<string, LedgerEntryRow[]>();
+  for (const entry of entryRows) {
     const walletEntries = entriesByWalletId.get(entry.wallet_id) ?? [];
     walletEntries.push(entry);
     entriesByWalletId.set(entry.wallet_id, walletEntries);
@@ -1073,16 +1037,13 @@ export async function listSupabaseTokeners(): Promise<
         balance: calculateBalance(
           entriesByWalletId.get(customer.wallet_id) ?? [],
         ),
-        claimCode: customer.claim_code,
         claimExpiresAt: customer.claim_expires_at,
         claimedAt: customer.claimed_at,
         claimPath: buildClaimPath(customer.claim_code),
         customerId: customer.id,
         displayName: account.display_name,
         nric: customer.nric ?? null,
-        privateAccountPath: buildPrivateAccountPath(
-          customer.private_access_code,
-        ),
+        transactions: [],
         walletPublicCode: customer.public_code,
         walletQrUpdatedAt: customer.wallet_qr_updated_at,
       } satisfies SupabaseTokenerSummary;
@@ -1090,98 +1051,79 @@ export async function listSupabaseTokeners(): Promise<
     .sort((left, right) => left.displayName.localeCompare(right.displayName));
 }
 
-export async function getSupabaseAdminTransactionOverview(): Promise<AdminTransactionOverview> {
-  const { eventId } = await ensureSupabaseBaseline();
+export async function getSupabaseTokener(
+  customerId: string,
+): Promise<SupabaseTokenerSummary> {
+  const eventId = await loadPrimarySupabaseEventId();
   const supabase = createSupabaseServerClient();
-  const result = await supabase
-    .from("ledger_entries")
+  const customerResult = await supabase
+    .from("customers")
     .select(
-      "id, transaction_group_id, entry_type, direction, token_amount, reference, description, occurred_at",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
     )
     .eq("event_id", eventId)
-    .order("occurred_at", { ascending: false });
+    .eq("id", customerId)
+    .single();
 
-  assertNoSupabaseError(result.error);
-  const rows = z.array(adminLedgerEntryRowSchema).parse(result.data);
-  const [creditIssuances, boothReports] = await Promise.all([
+  assertNoSupabaseError(customerResult.error);
+  return toSummary(customerRowSchema.parse(customerResult.data));
+}
+
+export async function getSupabaseAdminTransactionOverview(): Promise<AdminTransactionOverview> {
+  const eventId = await loadPrimarySupabaseEventId();
+  const supabase = createSupabaseServerClient();
+  const [metricsResult, creditIssuances, boothReports] = await Promise.all([
+    supabase.rpc("get_admin_transaction_metrics", { p_event_id: eventId }),
     getSupabaseAdminCreditIssuanceReports(eventId),
     getSupabaseAdminBoothReports(eventId),
   ]);
-  const transactions: readonly AdminTransactionListItem[] = rows.map((row) => ({
-    description: row.description,
-    direction: row.direction,
-    entryType: row.entry_type,
-    id: row.id,
-    occurredAt: row.occurred_at,
-    reference: row.reference,
-    tokenAmount: row.token_amount,
-    transactionGroupId: row.transaction_group_id,
-  }));
+  assertNoSupabaseError(metricsResult.error);
+  const metricsRows = z
+    .array(adminTransactionMetricsRowSchema)
+    .parse(metricsResult.data);
+  const metricsRow = metricsRows[0] ?? {
+    issued_tokens: 0,
+    refunded_tokens: 0,
+    spent_tokens: 0,
+    transaction_groups: 0,
+  };
 
   return {
     boothReports,
     creditIssuances,
     metrics: {
-      issuedTokens: rows
-        .filter(
-          (row) =>
-            row.entry_type === "token_issuance" && row.direction === "credit",
-        )
-        .reduce((total, row) => total + row.token_amount, 0),
-      refundedTokens: rows
-        .filter(
-          (row) =>
-            row.entry_type === "customer_refund" && row.direction === "credit",
-        )
-        .reduce((total, row) => total + row.token_amount, 0),
-      spentTokens: rows
-        .filter(
-          (row) =>
-            row.entry_type === "customer_purchase" && row.direction === "debit",
-        )
-        .reduce((total, row) => total + row.token_amount, 0),
-      transactionGroups: new Set(rows.map((row) => row.transaction_group_id))
-        .size,
+      issuedTokens: metricsRow.issued_tokens,
+      refundedTokens: metricsRow.refunded_tokens,
+      spentTokens: metricsRow.spent_tokens,
+      transactionGroups: metricsRow.transaction_groups,
     },
-    transactions,
+    transactions: [],
   };
 }
 
 export async function getSupabaseVendorOverview(
   vendorUsername: string,
 ): Promise<SupabaseVendorOverview> {
-  const eventId = await loadPrimarySupabaseEventId();
   const supabase = createSupabaseServerClient();
-  const vendorResult = await supabase
-    .from("vendors")
-    .select(
-      "id, display_name, stall_location, wallet_id, account_profiles!inner(username, role, status)",
-    )
-    .eq("event_id", eventId)
-    .eq("account_profiles.username", vendorUsername)
-    .eq("account_profiles.role", "vendor")
-    .eq("account_profiles.status", "active")
-    .single();
+  const result = await supabase.rpc("get_vendor_overview", {
+    p_vendor_username: vendorUsername,
+  });
 
-  assertNoSupabaseError(vendorResult.error);
-  const vendor = vendorOverviewRowSchema.parse(vendorResult.data);
-  const entries = await loadEntriesForWallet(vendor.wallet_id);
+  assertNoSupabaseError(result.error);
+  const rows = z.array(vendorOverviewRpcRowSchema).parse(result.data);
+  const row = rows[0];
+  if (row === undefined) {
+    throw new SupabaseTokenlyAccessError(
+      "TOKENLY_SUPABASE_WRITE_FAILED",
+      "Vendor overview could not load.",
+    );
+  }
 
   return {
-    balance: calculateBalance(entries),
-    displayName: vendor.display_name,
-    recentActivity: entries.slice(0, 12).map((entry) => ({
-      description: entry.description,
-      direction: entry.direction,
-      entryType: adminLedgerEntryRowSchema.shape.entry_type.parse(
-        entry.entry_type,
-      ),
-      id: entry.id,
-      occurredAt: entry.occurred_at,
-      reference: entry.reference,
-      tokenAmount: entry.token_amount,
-    })),
-    stallLocation: vendor.stall_location,
+    balance: row.balance,
+    displayName: row.display_name,
+    recentActivity: row.recent_activity,
+    stallLocation: row.stall_location,
   };
 }
 
@@ -1254,16 +1196,13 @@ export async function createSupabaseTokener(
   const customerRow = customerRowSchema.parse(customer.data);
   return {
     balance: 0,
-    claimCode: customerRow.claim_code,
     claimExpiresAt: customerRow.claim_expires_at,
     claimedAt: customerRow.claimed_at,
     claimPath: buildClaimPath(customerRow.claim_code),
     customerId: customerRow.id,
     displayName: parsed.displayName,
     nric: customerRow.nric ?? null,
-    privateAccountPath: buildPrivateAccountPath(
-      customerRow.private_access_code,
-    ),
+    transactions: [],
     walletPublicCode: customerRow.public_code,
     walletQrUpdatedAt: customerRow.wallet_qr_updated_at,
   };
@@ -1376,6 +1315,11 @@ export async function getSupabasePrivateAccount(
     loadWallet(customer.wallet_id),
     loadEntriesForWallet(customer.wallet_id),
   ]);
+  const vendorsById = await loadVendorDisplayDetailsById(
+    entries
+      .map((entry) => entry.related_vendor_id)
+      .filter((vendorId): vendorId is string => typeof vendorId === "string"),
+  );
 
   if (account.status !== "active" || wallet.owner_account_id !== account.id) {
     throw new SupabaseTokenlyAccessError(
@@ -1389,7 +1333,9 @@ export async function getSupabasePrivateAccount(
     customerId: customer.id,
     displayName: account.display_name,
     privateAccountPath: buildPrivateAccountPath(customer.private_access_code),
-    transactions: entries.slice(0, 8).map(toTransaction),
+    transactions: entries
+      .slice(0, 8)
+      .map((entry) => toTransaction(entry, vendorsById)),
     walletPublicCode: customer.public_code,
     walletQrPayload: buildTokenlyQrPayload({
       kind: "customer",
@@ -1611,14 +1557,9 @@ export async function createSupabaseVendorCharge(
   const vendorLedgerEntryId = randomUUID();
   const transactionGroupId = randomUUID();
   const now = new Date().toISOString();
-  const referencePrefix = parsed.direction === "deduct" ? "PAY" : "RET";
-  const reference = `${referencePrefix}-${Date.now()}-${customerLedgerEntryId.slice(0, 8)}`;
-  const idempotencyKey = `vendor-${parsed.direction}:${customerLedgerEntryId}`;
-  const rpcName =
-    parsed.direction === "deduct"
-      ? "vendor_charge_customer_wallet"
-      : "vendor_return_customer_tokens";
-  const result = await supabase.rpc(rpcName, {
+  const reference = `PAY-${Date.now()}-${customerLedgerEntryId.slice(0, 8)}`;
+  const idempotencyKey = `vendor-deduct:${customerLedgerEntryId}`;
+  const result = await supabase.rpc("vendor_charge_customer_wallet", {
     p_customer_id: parsed.customerId,
     p_customer_ledger_entry_id: customerLedgerEntryId,
     p_idempotency_key: idempotencyKey,
@@ -1635,12 +1576,8 @@ export async function createSupabaseVendorCharge(
       result.error.message.toLocaleLowerCase("en-SG").includes("insufficient")
     ) {
       throw new SupabaseTokenlyAccessError(
-        parsed.direction === "deduct"
-          ? "TOKEN_CHARGE_INSUFFICIENT_BALANCE"
-          : "TOKEN_RETURN_INSUFFICIENT_VENDOR_BALANCE",
-        parsed.direction === "deduct"
-          ? "Customer wallet has insufficient tokens."
-          : "Vendor wallet has insufficient tokens.",
+        "TOKEN_CHARGE_INSUFFICIENT_BALANCE",
+        "Customer wallet has insufficient tokens.",
       );
     }
 
@@ -1650,6 +1587,84 @@ export async function createSupabaseVendorCharge(
   return {
     ...(await getSupabaseCustomerWalletById(parsed.customerId)),
     reference,
+  };
+}
+
+export async function createSupabaseAdminVendorRefund(
+  input: SupabaseAdminVendorRefundInput,
+): Promise<SupabaseAdminVendorRefundResult> {
+  const parsed = supabaseAdminVendorRefundSchema.parse(input);
+  const { adminAccountId } = await loadSupabaseAdminContext();
+  const supabase = createSupabaseServerClient();
+  const refundId = randomUUID();
+  const customerLedgerEntryId = randomUUID();
+  const vendorLedgerEntryId = randomUUID();
+  const transactionGroupId = randomUUID();
+  const now = new Date().toISOString();
+  const reference = `REF-${Date.now()}-${refundId.slice(0, 8)}`;
+  const idempotencyKey = `admin-vendor-refund:${refundId}`;
+
+  const result = await supabase.rpc("admin_refund_vendor_transaction", {
+    p_actor_account_id: adminAccountId,
+    p_customer_id: parsed.customerId,
+    p_customer_ledger_entry_id: customerLedgerEntryId,
+    p_idempotency_key: idempotencyKey,
+    p_occurred_at: now,
+    p_purchase_transaction_group_id: parsed.purchaseTransactionGroupId,
+    p_reason: parsed.reason,
+    p_reference: reference,
+    p_refund_id: refundId,
+    p_token_amount: parsed.tokenAmount,
+    p_transaction_group_id: transactionGroupId,
+    p_vendor_ledger_entry_id: vendorLedgerEntryId,
+  });
+
+  if (result.error !== null) {
+    const message = result.error.message.toLocaleLowerCase("en-SG");
+
+    if (message.includes("exceeds remaining")) {
+      throw new SupabaseTokenlyAccessError(
+        "TOKEN_REFUND_AMOUNT_EXCEEDS_REMAINING",
+        "The refund amount exceeds the remaining refundable tokens.",
+      );
+    }
+
+    if (message.includes("insufficient")) {
+      throw new SupabaseTokenlyAccessError(
+        "TOKEN_REFUND_INSUFFICIENT_VENDOR_BALANCE",
+        "The vendor wallet does not have enough tokens for this refund.",
+      );
+    }
+
+    if (message.includes("not found") || message.includes("invalid")) {
+      throw new SupabaseTokenlyAccessError(
+        "TOKEN_REFUND_PURCHASE_NOT_FOUND",
+        "The selected vendor transaction is no longer refundable.",
+      );
+    }
+
+    assertNoSupabaseError(result.error);
+  }
+
+  const remainingRefundableTokenAmount = z.coerce
+    .number()
+    .nonnegative()
+    .multipleOf(0.01)
+    .parse(result.data);
+  const customerResult = await supabase
+    .from("customers")
+    .select(
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+    )
+    .eq("id", parsed.customerId)
+    .single();
+
+  assertNoSupabaseError(customerResult.error);
+
+  return {
+    reference,
+    remainingRefundableTokenAmount,
+    tokener: await toSummary(customerRowSchema.parse(customerResult.data)),
   };
 }
 
