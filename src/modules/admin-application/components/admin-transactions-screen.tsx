@@ -353,7 +353,7 @@ function CreditIssuanceReport({
       [
         "Created at UTC",
         "Customer name",
-        "NRIC",
+        "Mobile number",
         "Reference",
         "Payment method",
         "SGD amount",
@@ -365,7 +365,7 @@ function CreditIssuanceReport({
       issuances.map((issuance) => [
         issuance.createdAt,
         issuance.customerName,
-        issuance.nric,
+        issuance.mobileNumber,
         issuance.reference,
         issuance.paymentMethod,
         (issuance.sgdAmountCents / 100).toFixed(2),
@@ -417,7 +417,7 @@ function CreditIssuanceReport({
                       {issuance.customerName}
                     </h3>
                     <p className="mt-1 font-mono text-sm text-ink-muted">
-                      {issuance.nric ?? "No NRIC"}
+                      {issuance.mobileNumber ?? "No mobile number"}
                     </p>
                   </div>
                   <div className="text-right">
@@ -459,7 +459,7 @@ function CreditIssuanceReport({
                 <tr>
                   <th className="px-5 py-3">Time</th>
                   <th className="px-5 py-3">Customer</th>
-                  <th className="px-5 py-3">NRIC</th>
+                  <th className="px-5 py-3">Mobile number</th>
                   <th className="px-5 py-3">Amount</th>
                   <th className="px-5 py-3">Evidence</th>
                 </tr>
@@ -477,7 +477,7 @@ function CreditIssuanceReport({
                       {issuance.customerName}
                     </td>
                     <td className="px-5 py-4 align-top font-mono text-ink">
-                      {issuance.nric ?? "-"}
+                      {issuance.mobileNumber ?? "-"}
                     </td>
                     <td className="px-5 py-4 align-top">
                       <span className="block font-bold text-ink">

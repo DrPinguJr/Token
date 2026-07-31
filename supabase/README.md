@@ -17,7 +17,10 @@ This directory now contains:
 - `migrations/20260728154615_initial_tokenly_schema.sql`: an executable first
   relational schema migration for the current Tokenly data model.
 - `migrations/20260729101000_add_customer_nric.sql`: adds the admin-entered
-  customer NRIC/FIN field used by the deployed tokener creation prototype.
+  legacy customer NRIC/FIN field used by an earlier tokener creation prototype.
+- `migrations/20260801090000_add_customer_mobile_number.sql`: adds the
+  normalized customer mobile-number field that replaces NRIC/FIN for new
+  tokener creation. It does not provide SMS verification or phone sign-in.
 - `migrations/20260729143000_add_admin_credit_issuance.sql`: adds the private
   payment-evidence bucket and atomic evidence-backed customer credit function.
 - `migrations/20260729161500_set_one_to_one_token_rate.sql`: enforces the
@@ -38,8 +41,9 @@ This directory now contains:
 - `planned-schema.sql`: older non-executable planning material retained for
   design context.
 
-All executable migrations in `supabase/migrations/` have been pushed to the
-hosted Supabase project. Migration pushes require a database migration
+All executable migrations in `supabase/migrations/`, including the customer
+mobile-number migration, have been pushed to the hosted Supabase project.
+Migration pushes require a database migration
 credential such as `SUPABASE_ACCESS_TOKEN` plus database password, or a direct
 database URL. Publishable, anon, secret, and service-role API keys are not a
 substitute for a database migration credential.

@@ -9,7 +9,11 @@ import {
   parseTokenlyQrPayload,
 } from "@/modules/qr-payments";
 import type { CustomerTransactionListItem } from "@/modules/customer-application";
-import type { AdminTokenerTransactionItem } from "@/modules/customer-access";
+import {
+  createTokenerSchema,
+  type AdminTokenerTransactionItem,
+  type CreateTokenerInput,
+} from "@/modules/customer-access";
 import type {
   AdminBoothCategory,
   AdminBoothReport,
@@ -29,18 +33,7 @@ const fractionalTokenAmountSchema = z.coerce
   .positive()
   .multipleOf(0.01);
 
-const nricSchema = z
-  .string()
-  .trim()
-  .toUpperCase()
-  .regex(/^[STFGM][0-9]{7}[A-Z]$/, "Enter a valid NRIC or FIN.");
-
-export const createSupabaseTokenerSchema = z
-  .object({
-    displayName: z.string().trim().min(1).max(120),
-    nric: nricSchema,
-  })
-  .strict();
+export const createSupabaseTokenerSchema = createTokenerSchema;
 
 export const supabaseTokenAdjustmentSchema = z
   .object({
@@ -77,9 +70,7 @@ export const supabaseAdminVendorRefundSchema = z
   })
   .strict();
 
-export type CreateSupabaseTokenerInput = z.infer<
-  typeof createSupabaseTokenerSchema
->;
+export type CreateSupabaseTokenerInput = CreateTokenerInput;
 
 export type SupabaseTokenAdjustmentInput = z.infer<
   typeof supabaseTokenAdjustmentSchema
@@ -106,7 +97,7 @@ export interface SupabaseTokenerSummary {
   readonly claimPath: string;
   readonly customerId: string;
   readonly displayName: string;
-  readonly nric: string | null;
+  readonly mobileNumber: string | null;
   readonly transactions: readonly AdminTokenerTransactionItem[];
   readonly walletPublicCode: string;
   readonly walletQrUpdatedAt: string;
@@ -176,7 +167,7 @@ export class SupabaseTokenlyAccessError extends Error {
       | "CLAIM_QR_ALREADY_USED"
       | "CLAIM_QR_EXPIRED"
       | "CUSTOMER_ACCESS_DENIED"
-      | "DUPLICATE_NRIC"
+      | "DUPLICATE_MOBILE_NUMBER"
       | "INVALID_INPUT"
       | "TOKEN_CHARGE_INSUFFICIENT_BALANCE"
       | "TOKEN_REFUND_AMOUNT_EXCEEDS_REMAINING"
@@ -217,7 +208,7 @@ const customerRowSchema = z
     claim_expires_at: z.string(),
     claimed_at: z.string().nullable(),
     id: z.string().uuid(),
-    nric: z.string().nullable().optional(),
+    mobile_number: z.string().nullable().optional(),
     private_access_code: z.string(),
     public_code: z.string(),
     wallet_id: z.string().uuid(),
@@ -295,7 +286,7 @@ const adminCustomerReportRowSchema = z
   .object({
     account_id: z.string().uuid(),
     id: z.string().uuid(),
-    nric: z.string().nullable().optional(),
+    mobile_number: z.string().nullable().optional(),
   })
   .passthrough();
 
@@ -671,7 +662,7 @@ async function toSummary(
     claimPath: buildClaimPath(customer.claim_code),
     customerId: customer.id,
     displayName: account.display_name,
-    nric: customer.nric ?? null,
+    mobileNumber: customer.mobile_number ?? null,
     transactions: buildAdminTokenerTransactions(entries, vendorsById),
     walletPublicCode: customer.public_code,
     walletQrUpdatedAt: customer.wallet_qr_updated_at,
@@ -730,7 +721,7 @@ async function getSupabaseAdminCreditIssuanceReports(
   const [customersResult, evidenceResult] = await Promise.all([
     supabase
       .from("customers")
-      .select("id, account_id, nric")
+      .select("id, account_id, mobile_number")
       .in("id", customerIds),
     supabase
       .from("evidence")
@@ -804,7 +795,7 @@ async function getSupabaseAdminCreditIssuanceReports(
       evidencePreviewUrl: previewUrlsByEvidenceId.get(evidence.id) ?? null,
       evidenceStoragePath: evidence.storage_path,
       id: issuance.id,
-      nric: customer.nric ?? null,
+      mobileNumber: customer.mobile_number ?? null,
       paymentMethod: parseEvidencePaymentMethod(evidence.metadata),
       reference: issuance.reference,
       sgdAmountCents: issuance.paynow_amount_cents,
@@ -985,7 +976,7 @@ export async function listSupabaseTokeners(): Promise<
   const customers = await supabase
     .from("customers")
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .eq("event_id", eventId);
 
@@ -1042,7 +1033,7 @@ export async function listSupabaseTokeners(): Promise<
         claimPath: buildClaimPath(customer.claim_code),
         customerId: customer.id,
         displayName: account.display_name,
-        nric: customer.nric ?? null,
+        mobileNumber: customer.mobile_number ?? null,
         transactions: [],
         walletPublicCode: customer.public_code,
         walletQrUpdatedAt: customer.wallet_qr_updated_at,
@@ -1059,7 +1050,7 @@ export async function getSupabaseTokener(
   const customerResult = await supabase
     .from("customers")
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .eq("event_id", eventId)
     .eq("id", customerId)
@@ -1133,18 +1124,18 @@ export async function createSupabaseTokener(
   const parsed = createSupabaseTokenerSchema.parse(input);
   const eventId = await loadPrimarySupabaseEventId();
   const supabase = createSupabaseServerClient();
-  const existingNric = await supabase
+  const existingMobileNumber = await supabase
     .from("customers")
     .select("id")
     .eq("event_id", eventId)
-    .eq("nric", parsed.nric)
+    .eq("mobile_number", parsed.mobileNumber)
     .maybeSingle();
 
-  assertNoSupabaseError(existingNric.error);
-  if (existingNric.data !== null) {
+  assertNoSupabaseError(existingMobileNumber.error);
+  if (existingMobileNumber.data !== null) {
     throw new SupabaseTokenlyAccessError(
-      "DUPLICATE_NRIC",
-      "A tokener already exists for that NRIC.",
+      "DUPLICATE_MOBILE_NUMBER",
+      "A customer already exists for that mobile number.",
     );
   }
 
@@ -1181,14 +1172,14 @@ export async function createSupabaseTokener(
       claim_code: generateCode("claim"),
       claim_expires_at: addMinutes(now, claimExpiryMinutes),
       event_id: eventId,
-      nric: parsed.nric,
+      mobile_number: parsed.mobileNumber,
       private_access_code: generateCode("priv"),
       public_code: generateCode("cus"),
       wallet_id: walletId,
       wallet_qr_updated_at: now.toISOString(),
     })
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .single();
   assertNoSupabaseError(customer.error);
@@ -1201,7 +1192,7 @@ export async function createSupabaseTokener(
     claimPath: buildClaimPath(customerRow.claim_code),
     customerId: customerRow.id,
     displayName: parsed.displayName,
-    nric: customerRow.nric ?? null,
+    mobileNumber: customerRow.mobile_number ?? null,
     transactions: [],
     walletPublicCode: customerRow.public_code,
     walletQrUpdatedAt: customerRow.wallet_qr_updated_at,
@@ -1223,7 +1214,7 @@ export async function refreshSupabaseClaimQr(
     })
     .eq("id", customerId)
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .single();
 
@@ -1238,7 +1229,7 @@ export async function claimSupabaseTokener(
   const customerResult = await supabase
     .from("customers")
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .eq("claim_code", claimCode)
     .maybeSingle();
@@ -1296,7 +1287,7 @@ export async function getSupabasePrivateAccount(
   const customerResult = await supabase
     .from("customers")
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .eq("private_access_code", privateAccessCode)
     .maybeSingle();
@@ -1361,7 +1352,7 @@ export async function regenerateSupabaseWalletQr(
     })
     .eq("private_access_code", privateAccessCode)
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .single();
 
@@ -1379,7 +1370,7 @@ export async function createSupabaseTokenAdjustment(
   const customerResult = await supabase
     .from("customers")
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .eq("id", parsed.customerId)
     .single();
@@ -1479,7 +1470,7 @@ export async function createSupabaseCreditIssuance(
   const customerResult = await supabase
     .from("customers")
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .eq("id", parsed.customerId)
     .single();
@@ -1654,7 +1645,7 @@ export async function createSupabaseAdminVendorRefund(
   const customerResult = await supabase
     .from("customers")
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .eq("id", parsed.customerId)
     .single();
@@ -1675,7 +1666,7 @@ async function getSupabaseCustomerWalletById(
   const customerResult = await supabase
     .from("customers")
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .eq("id", customerId)
     .maybeSingle();
@@ -1721,7 +1712,7 @@ export async function resolveSupabaseCustomerWallet(
   const customerResult = await supabase
     .from("customers")
     .select(
-      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, nric",
+      "id, account_id, wallet_id, private_access_code, claim_code, claim_expires_at, claimed_at, public_code, wallet_qr_updated_at, mobile_number",
     )
     .eq("public_code", publicCode)
     .maybeSingle();

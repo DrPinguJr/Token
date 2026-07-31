@@ -31,7 +31,7 @@ export interface AdminTokenersScreenProps {
   readonly addTokenerCredits?: (input: AddCreditsInput) => Promise<void>;
   readonly createTokener?: (input: {
     readonly displayName: string;
-    readonly nric: string;
+    readonly mobileNumber: string;
   }) => Promise<void>;
   readonly loadTokeners: () => Promise<readonly AdminTokenerAccessSummary[]>;
   readonly loadTokenerDetail?: (
@@ -320,6 +320,11 @@ function TokenerDetailDialog({
             <p className="mt-1 text-sm font-semibold text-ink-muted">
               {formatTokenAmount(selectedTokener.balance)} tokens
             </p>
+            {selectedTokener.mobileNumber !== null && (
+              <p className="mt-1 font-mono text-sm text-ink-muted">
+                {selectedTokener.mobileNumber}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -580,7 +585,7 @@ export function AdminTokenersScreen({
   const [reloadVersion, setReloadVersion] = useState(0);
   const [loadedListVersion, setLoadedListVersion] = useState(-1);
   const [newDisplayName, setNewDisplayName] = useState("");
-  const [newNric, setNewNric] = useState("");
+  const [newMobileNumber, setNewMobileNumber] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createMessage, setCreateMessage] = useState<string | null>(null);
 
@@ -687,8 +692,12 @@ export function AdminTokenersScreen({
       return tokeners ?? [];
     }
 
-    return tokeners.filter((tokener) =>
-      tokener.displayName.toLocaleLowerCase("en-SG").includes(normalizedSearch),
+    return tokeners.filter(
+      (tokener) =>
+        tokener.displayName
+          .toLocaleLowerCase("en-SG")
+          .includes(normalizedSearch) ||
+        tokener.mobileNumber?.includes(normalizedSearch) === true,
     );
   }, [search, tokeners]);
   const selectedTokener =
@@ -746,14 +755,17 @@ export function AdminTokenersScreen({
     setIsCreating(true);
 
     try {
-      await createTokener({ displayName: newDisplayName, nric: newNric });
+      await createTokener({
+        displayName: newDisplayName,
+        mobileNumber: newMobileNumber,
+      });
       setNewDisplayName("");
-      setNewNric("");
+      setNewMobileNumber("");
       setCreateMessage("Tokener created. Open their popup to show the QR.");
       setReloadVersion((current) => current + 1);
     } catch {
       setCreateMessage(
-        "Tokener could not be created. Check the name and NRIC.",
+        "Tokener could not be created. Check the name and mobile number.",
       );
     } finally {
       setIsCreating(false);
@@ -826,12 +838,16 @@ export function AdminTokenersScreen({
                 />
               </label>
               <label>
-                <span className="text-sm font-semibold text-ink">NRIC</span>
+                <span className="text-sm font-semibold text-ink">
+                  Mobile number
+                </span>
                 <input
-                  value={newNric}
-                  onChange={(event) => setNewNric(event.target.value)}
-                  placeholder="S1234567A"
-                  autoCapitalize="characters"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={newMobileNumber}
+                  onChange={(event) => setNewMobileNumber(event.target.value)}
+                  placeholder="9123 4567"
                   className="mt-2 min-h-12 w-full rounded-2xl bg-canvas px-4 py-3 font-mono text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus"
                 />
               </label>
@@ -871,6 +887,11 @@ export function AdminTokenersScreen({
                     <h2 className="text-xl font-bold text-ink">
                       {tokener.displayName}
                     </h2>
+                    {tokener.mobileNumber !== null && (
+                      <p className="mt-1 font-mono text-sm text-ink-muted">
+                        {tokener.mobileNumber}
+                      </p>
+                    )}
                     <p className="mt-1 text-sm text-ink-muted">
                       Claim: {formatClaimState(tokener)}
                     </p>

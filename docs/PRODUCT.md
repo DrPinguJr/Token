@@ -56,6 +56,8 @@ Definitions:
 - Four-digit wallet PIN setup and verification where required.
 - Simulated lockout after repeated failures with generic failure messages.
 - Tokeners do not use username, password, mobile-number, or PIN sign-in.
+- Administrators identify newly created Tokeners by an unverified Singapore
+  mobile number instead of collecting NRIC/FIN.
 - Tokeners receive a one-time claim QR and then save a private account link.
 - A development-only role switcher, enabled only by environment configuration.
 - No browser route exposes destructive local-data reset or reseed controls.

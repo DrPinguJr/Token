@@ -18,7 +18,7 @@ function errorResponse(error: unknown) {
   if (error instanceof SupabaseTokenlyAccessError) {
     return NextResponse.json(
       { code: error.code, message: error.message },
-      { status: error.code === "DUPLICATE_NRIC" ? 409 : 400 },
+      { status: error.code === "DUPLICATE_MOBILE_NUMBER" ? 409 : 400 },
     );
   }
 

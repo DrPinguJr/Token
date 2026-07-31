@@ -65,7 +65,7 @@ export async function loadRemoteTokenerDetail(
 
 export async function createRemoteTokener(input: {
   readonly displayName: string;
-  readonly nric: string;
+  readonly mobileNumber: string;
 }): Promise<void> {
   await readJson(
     await fetch("/api/admin/tokeners", {

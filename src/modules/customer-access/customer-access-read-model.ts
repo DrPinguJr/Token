@@ -25,6 +25,7 @@ export interface AdminTokenerTransactionItem {
 export interface AdminTokenerAccessSummary {
   readonly customerId: string;
   readonly displayName: string;
+  readonly mobileNumber: string | null;
   readonly balance: number;
   readonly claimPath: string;
   readonly claimExpiresAt: string;

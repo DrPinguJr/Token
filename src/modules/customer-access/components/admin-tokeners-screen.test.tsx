@@ -24,6 +24,7 @@ const tokener: AdminTokenerAccessSummary = {
   claimPath: "/claim/claim_secret_value",
   customerId: "customer-001",
   displayName: "Lance Tan",
+  mobileNumber: "91234567",
   transactions: [
     {
       description: "Vendor quick charge customer wallet debit.",

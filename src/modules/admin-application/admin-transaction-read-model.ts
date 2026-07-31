@@ -34,7 +34,7 @@ export interface AdminCreditIssuanceReportItem {
   readonly evidencePreviewUrl: string | null;
   readonly evidenceStoragePath: string;
   readonly id: string;
-  readonly nric: string | null;
+  readonly mobileNumber: string | null;
   readonly paymentMethod: "cash" | "paynow" | "unknown";
   readonly reference: string;
   readonly sgdAmountCents: number;

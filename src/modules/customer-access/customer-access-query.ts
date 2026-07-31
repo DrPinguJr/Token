@@ -243,6 +243,7 @@ async function toAdminSummary(
   return Object.freeze({
     customerId: customer.id,
     displayName: account.displayName,
+    mobileNumber: account.mobileNumber,
     balance,
     claimPath: buildClaimPath(credentials.claimCode),
     claimExpiresAt: credentials.claimExpiresAt,

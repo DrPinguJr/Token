@@ -79,6 +79,13 @@ prototype; claim/private account routes scan the local customer records. The
 vendor-facing `publicCode` remains indexed and is the only customer credential
 inside wallet QR payloads.
 
+The deployed Supabase prototype additionally stores `mobile_number` on the
+customer row for administrator identification during Tokener creation. It is
+normalized to eight Singapore digits, unique per event when present, and is
+not verified or used for authentication. The older hosted `nric` column is
+retained only to avoid a destructive migration; current application code does
+not read or write it.
+
 ### `wallets`
 
 | Field            | Notes                        |

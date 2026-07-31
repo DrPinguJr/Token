@@ -1,6 +1,6 @@
 # Tokenly Implementation Status
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 ## Summary
 
@@ -180,6 +180,13 @@ cookie established by the local `AdminLance` and `Vendor1` password entry flow.
 This is still prototype authentication, not Supabase Auth or production-grade
 authorization.
 
+Administrator tokener creation now accepts a Singapore mobile number instead
+of NRIC/FIN. The API normalizes common `+65` and spacing formats to eight
+digits, rejects invalid or event-duplicate numbers, and stores the number in a
+new Supabase customer field. The number is unverified and is not used for SMS
+authentication or customer sign-in. Existing legacy NRIC data is preserved but
+is no longer read by the application.
+
 The vendor customer-wallet scanner now renders its live camera surface while
 the scanner starts, keeps a visible preview and targeting frame active during
 scanning, and provides an explicit stop control and manual fallback. The admin
@@ -209,7 +216,7 @@ Supabase project.
 
 The administrator activity route `/admin/transactions` now loads categorized
 Supabase-backed reports. The **Token issuance** report shows each credit
-issuance with customer name, NRIC, received amount, issued token amount,
+issuance with customer name, mobile number, received amount, issued token amount,
 payment method, reference, and a signed Supabase Storage evidence-preview link.
 The **Game booths** and **Food booths** reports group hosted vendor ledger
 activity into booth summaries, include Booth 1-6 filters, show each selected
@@ -450,6 +457,13 @@ reports, and no longer builds an unused top-level transaction list.
 | Hosted wallet balance hotfix | Passed, 2026-07-30 | Restored `wallet_id` to the shared Supabase ledger-entry select after local smoke found add-credit, private-account, and vendor wallet resolution responses were crashing after successful ledger writes. |
 | Admin report API smoke | Passed, 2026-07-30 | With `.env.local` loaded, localhost admin login succeeded and `/api/admin/transactions` returned HTTP 200 with 6 credit issuances, 6 game-booth summaries, 3 game transactions, 6 food-booth summaries, and 0 food transactions from the hosted Supabase data. |
 | Entry/admin visual smoke | Passed, 2026-07-30 | Playwright mobile screenshots confirmed the restored public Big Blue `/enter` image framing and the `/admin/transactions` mobile report with visible customer name, NRIC, amount, payment method, reference, and evidence preview controls. |
+| Tokener mobile-number focused tests | Passed, 2026-08-01 | 2 Vitest files and 12 tests passed for mobile-number normalization/rejection, legacy NRIC payload rejection, tokener popup behaviour, and administrator refund interaction. |
+| Tokener mobile-number lint | Passed, 2026-08-01 | Repository-wide ESLint completed without errors after the creation, reporting, and admin-screen update. |
+| Tokener mobile-number typecheck | Passed, 2026-08-01 | Repository-wide `tsc --noEmit` completed without errors after installing the locked dependencies. |
+| Tokener mobile-number format check | Passed, 2026-08-01 | Repository-wide Prettier check completed successfully. |
+| Tokener mobile-number full tests | Passed, 2026-08-01 | All 62 Vitest files and 329 tests passed. |
+| `npm run build` | Passed, 2026-08-01 | Next.js 16.2.12 production build compiled, typechecked, and generated all routes with the mobile-number creation flow. |
+| Supabase customer mobile-number migration | Passed, 2026-08-01 | Direct authenticated database push applied `20260801090000_add_customer_mobile_number.sql`; the remote migration list confirmed matching local/remote versions. A Docker-only migration catalog cache warning did not block the push. |
 | Focused report and camera tests | Passed, 2026-07-30 | 15 focused Vitest tests passed for the admin transactions screen, add-credits dialog, and account-entry screen after the report, evidence-control, and entry-image changes. |
 | `npm run format` | Passed, 2026-07-30 | Repository Prettier write completed with no changed files after the admin report and entry image updates. |
 | `npm run format:check` | Passed, 2026-07-30 | Repository-wide Prettier check completed after the admin report and entry image updates. |
